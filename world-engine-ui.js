@@ -18,6 +18,7 @@ window.WORLD_ENGINE_UI = (function() {
   let listPagerCounter = 0;
   const listPageState = {};
   const sectionCollapsed = {};
+  const expandedWorldbookGroups = new Set();
 
   function h(str) {
     if (!str) return '';
@@ -103,7 +104,7 @@ window.WORLD_ENGINE_UI = (function() {
       <div class="we-tab-content" id="we-tab-current" style="${_activeTab === 'current' ? 'display:block' : 'display:none'}">
         <div class="we-actions-bar" style="margin-bottom:8px;">
           <button class="we-btn we-btn-primary" id="we-btn-evolve">🌀 手动推演</button>
-          <button class="we-btn we-btn-danger" id="we-btn-abort" style="background:var(--we-danger);color:#fff;display:none;">⏹ 停止推演</button>
+          <button class="we-btn we-btn-danger" id="we-btn-abort" style="background:var(--we-danger);color:#fff;" disabled>⏹ 停止推演</button>
           <button class="we-btn" id="we-btn-refresh">🔄 刷新</button>
         </div>
         ${renderFullState(state, curLayer, 'state')}
@@ -1463,6 +1464,7 @@ window.WORLD_ENGINE_UI = (function() {
           showToast('已发送停止信号');
         };
       }
+      setEvolvingUI(isEvolving || Boolean(evolution.isRunning?.()));
     }
 
     const refreshBtn = document.getElementById('we-btn-refresh');
@@ -1536,10 +1538,12 @@ window.WORLD_ENGINE_UI = (function() {
           if (!groups.has(entry.world)) groups.set(entry.world, []);
           groups.get(entry.world).push(entry);
         }
-        worldbookList.innerHTML = [...groups.entries()].map(([world, worldEntries]) => `
-          <div class="we-worldbook-group">
+        worldbookList.innerHTML = [...groups.entries()].map(([world, worldEntries]) => {
+          const expanded = expandedWorldbookGroups.has(world);
+          return `
+          <div class="we-worldbook-group" data-worldbook-group="${u(world)}">
             <div class="we-worldbook-group-header">
-              <span>▶</span>
+              <span>${expanded ? '▼' : '▶'}</span>
               <div class="we-worldbook-group-title">
                 <div>${u(world)} <span>${worldEntries.length}条</span></div>
               </div>
@@ -1548,7 +1552,7 @@ window.WORLD_ENGINE_UI = (function() {
                 <button type="button" data-worldbook-group-action="clear">取消全选</button>
               </div>
             </div>
-            <div class="we-worldbook-group-body" style="display:none;">
+            <div class="we-worldbook-group-body" style="${expanded ? '' : 'display:none;'}">
             ${worldEntries.map(entry => `
               <label class="we-worldbook-entry${entry.disabled ? ' is-disabled' : ''}">
                 <input class="we-worldbook-entry-check" type="checkbox" value="${u(entry.id)}" data-chars="${entry.content.length}" ${selectedIds.has(entry.id) ? 'checked' : ''}>
@@ -1558,7 +1562,8 @@ window.WORLD_ENGINE_UI = (function() {
                 </span>
               </label>`).join('')}
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
           worldbookList.querySelectorAll('.we-worldbook-entry-check').forEach(checkbox => {
             checkbox.onchange = () => {
               _cachedSelectedIds = new Set([...worldbookList.querySelectorAll('.we-worldbook-entry-check:checked')].map(cb => cb.value));
@@ -1573,6 +1578,11 @@ window.WORLD_ENGINE_UI = (function() {
                 const isHidden = body.style.display === 'none';
                 body.style.display = isHidden ? '' : 'none';
                 if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+                const world = header.closest('.we-worldbook-group')?.dataset.worldbookGroup;
+                if (world) {
+                  if (isHidden) expandedWorldbookGroups.add(world);
+                  else expandedWorldbookGroups.delete(world);
+                }
               }
             };
           });
@@ -1966,7 +1976,7 @@ window.WORLD_ENGINE_UI = (function() {
   function setEvolvingUI(active) {
     const abortBtn = document.getElementById('we-btn-abort');
     const evolveBtn = document.getElementById('we-btn-evolve');
-    if (abortBtn) abortBtn.style.display = active ? '' : 'none';
+    if (abortBtn) abortBtn.disabled = !active;
     if (evolveBtn) {
       evolveBtn.disabled = active;
       evolveBtn.textContent = active ? '⏳ 推演中...' : '🌀 手动推演';

@@ -64,6 +64,9 @@
 
       let isEvolving = false;
       let lastInjectedRound = -1;
+      let autoEvolveTimer = null;
+      let lastProcessedMessageKey = '';
+      const AUTO_EVOLVE_DELAY = 1500;
 
       // ========== 注入管理 ==========
       const INJECTION_NAME = 'world-engine-world';
@@ -159,53 +162,79 @@
         }
       }
 
-      // ========== 收到回复后：世界推演 + 记录账本 ==========
-      async function onMessageReceived() {
-        if (isEvolving) return;
+      // ========== 收到完整回复后：世界推演 + 记录账本 ==========
+      function getMessageKey(ctx, chat, message) {
+        const messageId = message?.mesId ?? message?.message_id ?? message?.send_date ?? (chat.length - 1);
+        const swipeId = message?.swipe_id ?? message?.swipeId ?? '';
+        return [core.getChatId(), chat.length - 1, messageId, swipeId].join('|');
+      }
+
+      function clearAutoEvolveTimer() {
+        if (autoEvolveTimer) {
+          clearTimeout(autoEvolveTimer);
+          autoEvolveTimer = null;
+        }
+      }
+
+      function onMessageReceived() {
+        clearAutoEvolveTimer();
+
+        const ctx = SillyTavern.getContext();
+        const chat = ctx?.chat || [];
+        const lastMsg = chat[chat.length - 1];
+        const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '').trim() : '';
+        if (!ctx || chat.length <= 2 || !lastMsg || lastMsg.is_user || !aiMsg) return;
+
+        const messageKey = getMessageKey(ctx, chat, lastMsg);
+        autoEvolveTimer = setTimeout(
+          () => runAutoEvolution(messageKey, aiMsg),
+          AUTO_EVOLVE_DELAY
+        );
+      }
+
+      async function runAutoEvolution(expectedKey, expectedText) {
+        autoEvolveTimer = null;
+        if (isEvolving || lastProcessedMessageKey === expectedKey) return;
+
+        const ctx = SillyTavern.getContext();
+        const chat = ctx?.chat || [];
+        const lastMsg = chat[chat.length - 1];
+        const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '').trim() : '';
+        if (!ctx || !lastMsg || lastMsg.is_user || !aiMsg) return;
+
+        const currentKey = getMessageKey(ctx, chat, lastMsg);
+        if (currentKey !== expectedKey) return;
+        if (aiMsg !== expectedText) {
+          onMessageReceived();
+          return;
+        }
+
         isEvolving = true;
-
         try {
-          const ctx = SillyTavern.getContext();
-          if (!ctx) { isEvolving = false; return; }
           const state = core.loadState();
-          const chat = ctx.chat || [];
-          if (chat.length <= 2) {
-            isEvolving = false;
-            return;
-          }
-
-          const lastMsg = chat[chat.length - 1];
-          const userMsg = lastMsg?.is_user ? (lastMsg.mes || '') : '';
-          const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '') : '';
-
-          // 显示推演中
           if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
           if (ui && ui.setEvolvingUI) ui.setEvolvingUI(true);
 
-          // 1. 世界推演
-          const success = await evolution.evolve(state, userMsg, aiMsg);
-
-          // 2. API 返回后记录账本（对比存档点与推演后状态）
-          if (success) ledger.recordChanges(state);
-
-          // 3. API 返回后刷新 UI 并显示状态
-          if (ui) { ui.setEvolvingUI(false); ui.refresh(); }
-          if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(success ? '✅ 推演完成' : '❌ 推演失败', !success);
-
+          const success = await evolution.evolve(state, '', aiMsg);
           if (success) {
+            lastProcessedMessageKey = currentKey;
+            ledger.recordChanges(state);
             console.log('[世界引擎] ✅ 推演完成，当前第', state.round, '轮');
           } else {
-            console.warn('[世界引擎] ⚠️ 推演失败');
+            console.warn('[世界引擎] ⚠️ 推演失败或已中止');
           }
+          if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(success ? '✅ 推演完成' : '❌ 推演失败或已中止', !success);
         } catch(e) {
           console.error('[世界引擎] 处理失败', e);
           if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('❌ 推演异常: ' + e.message, true);
         } finally {
           isEvolving = false;
+          if (ui) { ui.setEvolvingUI(false); ui.refresh(); }
         }
       }
 
       async function onChatLoaded() {
+        clearAutoEvolveTimer();
         const ctx = SillyTavern.getContext();
         const chat = ctx?.chat || [];
         if (chat.length === 0) {
@@ -220,17 +249,19 @@
       }
 
       function onMessageSwiped() {
+        clearAutoEvolveTimer();
         lastInjectedRound = -1;
       }
 
       // ========== 事件绑定 ==========
       const ctx = SillyTavern.getContext();
       if (ctx && ctx.eventSource) {
+        const autoEvolveEvent = ctx.event_types?.GENERATION_ENDED || ctx.event_types?.MESSAGE_RECEIVED || 'message_received';
         ctx.eventSource.on(ctx.event_types?.MESSAGE_SENT || 'message_sent', beforeMessageSend);
-        ctx.eventSource.on(ctx.event_types?.MESSAGE_RECEIVED || 'message_received', onMessageReceived);
+        ctx.eventSource.on(autoEvolveEvent, onMessageReceived);
         ctx.eventSource.on(ctx.event_types?.CHAT_LOADED || 'chat_loaded', onChatLoaded);
         ctx.eventSource.on(ctx.event_types?.MESSAGE_SWIPED || 'message_swiped', onMessageSwiped);
-        console.log('[世界引擎] 事件绑定成功');
+        console.log('[世界引擎] 事件绑定成功，自动推演事件:', autoEvolveEvent);
       } else {
         console.warn('[世界引擎] 无法绑定事件');
       }

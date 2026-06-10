@@ -631,8 +631,14 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
   }
 
   let _abortController = null;
+  let _isRunning = false;
 
   async function evolve(state, userMsg, aiMsg) {
+    if (_isRunning) {
+      console.warn('[世界引擎] ⚠️ 已有推演正在进行，跳过重复请求');
+      return false;
+    }
+
     const backup = JSON.parse(JSON.stringify(state));
     const isNew = core.isNewRound();
 
@@ -654,6 +660,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
       }
     }
 
+    _isRunning = true;
     _abortController = new AbortController();
 
     try {
@@ -810,6 +817,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
       }
       core.saveStateWithLayer(state);
       _abortController = null;
+      _isRunning = false;
       return true;
 
     } catch(e) {
@@ -821,6 +829,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
       Object.assign(state, backup);
       core.saveState(state);
       _abortController = null;
+      _isRunning = false;
       return false;
     }
   }
@@ -832,6 +841,10 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
     }
   }
 
+  function isRunning() {
+    return _isRunning;
+  }
+
   window.WORLD_ENGINE_DEBUG = {
     evolve,
     callEvolutionAPI,
@@ -840,5 +853,5 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
     state: () => core.loadState()
   };
 
-  return { evolve, getLastDebug, abort };
+  return { evolve, getLastDebug, abort, isRunning };
 })();
