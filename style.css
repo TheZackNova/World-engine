@@ -262,6 +262,10 @@
   gap: 3px;
 }
 
+.we-influence-step.we-influence-trigger {
+  padding-right: 84px;
+}
+
 /* ===== 区域突发事件操作按钮区域 ===== */
 .we-accident-item {
   font-size: 12px;

@@ -635,6 +635,25 @@ window.WORLD_ENGINE_UI = (function() {
       </div>`;
   }
 
+  function getRegionalIncidentTypeLabel(type) {
+    const labels = {
+      banditry: '盗匪劫掠',
+      fire: '大火',
+      massacre: '恶性凶案',
+      flood: '洪涝',
+      infrastructure: '道路水利崩坏',
+      plague: '疫病',
+      famine: '饥荒粮荒',
+      riot: '骚乱暴动',
+      rebellion: '民变叛乱',
+      military: '军务突变',
+      earthquake: '地震山崩',
+      storm: '风暴雪灾',
+      other: '其他'
+    };
+    return labels[type] || '其他';
+  }
+
   function renderRegionalIncident(ri) {
     if (!ri) return '<div class="we-empty">尚未进行区域突发事件判定</div>';
     const isEditing = editingRI?.active === true;
@@ -650,7 +669,7 @@ window.WORLD_ENGINE_UI = (function() {
       return `<div class="we-accident-item we-regional-incident-item we-accident-triggered">
         ${actionHtml}
         ⚠️ ${u(ri.title)}<br>
-        <span style="font-size:11px;color:var(--we-text3);">类型: ${u(ri.type||'?')} | 范围: ${u(ri.scope||'?')} | 冷却: ${ri.cooldown||0}轮</span><br>
+        <span style="font-size:11px;color:var(--we-text3);">类型: ${u(getRegionalIncidentTypeLabel(ri.type))} | 范围: ${u(ri.scope||'?')} | 冷却: ${ri.cooldown||0}轮</span><br>
         <span style="font-size:11px;color:var(--we-text2);">${u(ri.impact||'')}</span>
         ${editHtml}
       </div>`;
@@ -658,7 +677,7 @@ window.WORLD_ENGINE_UI = (function() {
     if (ri.title && ri.title.includes('重试')) {
       return `<div class="we-accident-item we-regional-incident-item" style="border-left:3px solid var(--we-gold);">
         ${actionHtml}
-        ⚠️ ${u(ri.title)}（类型: ${u(ri.type||'?')}）
+        ⚠️ ${u(ri.title)}（类型: ${u(getRegionalIncidentTypeLabel(ri.type))}）
         ${editHtml}
       </div>`;
     }
@@ -670,9 +689,9 @@ window.WORLD_ENGINE_UI = (function() {
 
   function renderRIEditor(ri) {
     const types = ['banditry','fire','massacre','flood','infrastructure','plague','famine','riot','rebellion','military','earthquake','storm'];
-    const typeLabels = ['盗匪劫掠','大火','恶性凶案','洪涝','道路水利崩坏','疫病','饥荒粮荒','骚乱暴动','民变叛乱','军务突变','地震山崩','风暴雪灾'];
-    const typeOptions = types.map((t, i) =>
-      `<option value="${t}" ${ri.type === t ? 'selected' : ''}>${typeLabels[i]}</option>`).join('');
+    if (ri.type && !types.includes(ri.type)) types.push(ri.type);
+    const typeOptions = types.map(t =>
+      `<option value="${t}" ${ri.type === t ? 'selected' : ''}>${u(getRegionalIncidentTypeLabel(t))}</option>`).join('');
     return `
       <div class="we-event-editor" data-ri-edit="1">
         <button class="we-event-editor-close we-ri-editor-close"><i class="fa-solid fa-xmark"></i></button>
