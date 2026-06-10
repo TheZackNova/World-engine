@@ -1589,12 +1589,6 @@ window.WORLD_ENGINE_UI = (function() {
             };
           });
           updateWorldbookSummary();
-        } catch(error) {
-          worldbookList.innerHTML = `<div class="we-empty">读取失败：${u(error.message)}</div>`;
-          if (summary) summary.textContent = '读取失败';
-        } finally {
-          if (reloadBtn) reloadBtn.disabled = false;
-        }
       }
 
       if (reloadBtn) reloadBtn.onclick = () => { _cachedEntries = null; loadWorldbookEntries(); };
@@ -1980,52 +1974,84 @@ window.WORLD_ENGINE_UI = (function() {
   }
 
   // ========== 输入栏地球按钮 ==========
-  function buildInputButton() {
-    if (document.getElementById('we-input-btn')) return;
+  let inputButtonObserver = null;
+  let inputButtonRetryTimer = null;
 
-    const btn = document.createElement('button');
-    btn.id = 'we-input-btn';
-    btn.type = 'button';
-    btn.title = '世界引擎';
-    btn.innerHTML = '<i class="fa-solid fa-earth-asia"></i>';
-    btn.className = 'menu_button interactable';
-    btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;margin:0 4px;padding:4px 8px;cursor:pointer;';
-    btn.onclick = () => togglePanel();
-
-    const selectors = [
-      '#quickReplyBlock',
-      '#send_but',
-      '#send_form',
-      '#form_sheld',
-      '#chatbar',
-      '#send_textarea',
-      'textarea'
-    ];
-
-    let target = null;
-    for (const sel of selectors) {
-      target = document.querySelector(sel);
-      if (target) break;
+  function findInputButtonMount() {
+    const sendButton = document.querySelector('#send_but');
+    if (sendButton?.parentElement) {
+      return { container: sendButton.parentElement, before: sendButton };
     }
 
-    if (target) {
-      if (target.tagName === 'TEXTAREA') target.parentElement.appendChild(btn);
-      else target.appendChild(btn);
+    const container = document.querySelector('#send_form, #form_sheld, #chatbar, #quickReplyBlock');
+    if (container) return { container, before: null };
+
+    const textarea = document.querySelector('#send_textarea, textarea');
+    if (textarea?.parentElement) return { container: textarea.parentElement, before: null };
+
+    return null;
+  }
+
+  function observeInputButton() {
+    if (inputButtonObserver || !document.body) return;
+
+    inputButtonObserver = new MutationObserver(() => {
+      const btn = document.getElementById('we-input-btn');
+      const status = document.getElementById('we-external-status');
+      const mount = findInputButtonMount();
+      if (!btn || !status || (mount && btn.parentElement !== mount.container)) {
+        clearTimeout(inputButtonRetryTimer);
+        inputButtonRetryTimer = setTimeout(buildInputButton, 50);
+      }
+    });
+    inputButtonObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function buildInputButton() {
+    if (!document.body) return;
+
+    let btn = document.getElementById('we-input-btn');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'we-input-btn';
+      btn.type = 'button';
+      btn.title = '世界引擎';
+      btn.setAttribute('aria-label', '世界引擎');
+      btn.textContent = '🌐';
+      btn.className = 'menu_button interactable';
+      btn.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;margin:0 4px;padding:4px 8px;cursor:pointer;';
+      btn.onclick = () => togglePanel();
+    }
+    btn.textContent = '🌐';
+
+    let statusIndicator = document.getElementById('we-external-status');
+    if (!statusIndicator) {
+      statusIndicator = document.createElement('span');
+      statusIndicator.id = 'we-external-status';
+      statusIndicator.className = 'we-external-status';
+    }
+
+    const mount = findInputButtonMount();
+    if (mount) {
+      btn.dataset.weFallback = 'false';
+      btn.style.position = '';
+      btn.style.right = '';
+      btn.style.bottom = '';
+      btn.style.zIndex = '';
+      statusIndicator.style.position = '';
+      statusIndicator.style.right = '';
+      statusIndicator.style.bottom = '';
+      statusIndicator.style.zIndex = '';
+      mount.container.insertBefore(statusIndicator, mount.before);
+      mount.container.insertBefore(btn, mount.before);
     } else {
+      btn.dataset.weFallback = 'true';
+      document.body.appendChild(statusIndicator);
       document.body.appendChild(btn);
       btn.style.position = 'fixed';
       btn.style.right = '72px';
       btn.style.bottom = '16px';
       btn.style.zIndex = '9999';
-    }
-
-    const statusIndicator = document.createElement('span');
-    statusIndicator.id = 'we-external-status';
-    statusIndicator.className = 'we-external-status';
-    if (target) {
-      target.tagName === 'TEXTAREA' ? target.parentElement.appendChild(statusIndicator) : target.appendChild(statusIndicator);
-    } else {
-      document.body.appendChild(statusIndicator);
       statusIndicator.style.position = 'fixed';
       statusIndicator.style.right = '108px';
       statusIndicator.style.bottom = '18px';
@@ -2045,6 +2071,7 @@ window.WORLD_ENGINE_UI = (function() {
     };
 
     buildPanel();
+    observeInputButton();
   }
 
   return { buildPanel, buildInputButton, showPanel, hidePanel, togglePanel, refresh, setStatus, setEvolvingUI };
