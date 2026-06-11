@@ -72,7 +72,7 @@ window.WORLD_ENGINE_WORLDBOOK = (function() {
 
     try {
       const entries = await loadCurrentEntries();
-      const selectedEntries = entries.filter(entry => selectedIds.has(entry.id));
+      const selectedEntries = entries.filter(entry => selectedIds.has(entry.id) && !entry.disabled);
       if (!selectedEntries.length) return '';
 
       const content = selectedEntries.map(entry =>
