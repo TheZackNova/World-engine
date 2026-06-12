@@ -284,7 +284,13 @@ window.WORLD_ENGINE_UI = (function() {
       const itemStyle = isTerminal
         ? `border-left:3px solid ${color};background:${terminalBg};position:relative;overflow:hidden;`
         : `border-left:3px solid ${color};position:relative;`;
-      const itemClass = isTerminal ? 'we-event-item we-event-item-terminal' : 'we-event-item';
+      const stageClassMap = {
+        萌芽: 'we-stage-sprout', 发酵: 'we-stage-ferment', 逼近: 'we-stage-loom',
+        已爆发: 'we-stage-erupt', 已消散: 'we-stage-fade',
+        已完成: 'we-stage-done', 已失败: 'we-stage-failed',
+      };
+      const stageClass = stageClassMap[e.stage] || '';
+      const itemClass = (isTerminal ? 'we-event-item we-event-item-terminal' : 'we-event-item') + (stageClass ? ' ' + stageClass : '');
       const metaStyle = isTerminal
         ? 'style="color:var(--we-text2);"'
         : '';
@@ -494,7 +500,8 @@ window.WORLD_ENGINE_UI = (function() {
         </div>`;
       const editHtml = isEditing ? renderWindEditor(w, windIndex) : '';
 
-      let html = '<div class="we-wind-item" style="border-left-color:' + typeColor + ';">';
+      const windTypeClass = { announcement:'we-wind-announcement', report:'we-wind-report', rumor:'we-wind-rumor', sentiment:'we-wind-sentiment' }[w.type] || '';
+      let html = '<div class="we-wind-item ' + windTypeClass + '" style="border-left-color:' + typeColor + ';">';
       html += '<div class="we-wind-header">';
       html += '<span class="we-wind-topic">' + u(w.topic || '未命名风声') + '</span>';
       html += '<span class="we-badge" style="background:' + typeColor + '22;color:' + typeColor + ';">' + (typeNames[w.type] || '风声') + '</span>';

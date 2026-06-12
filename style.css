@@ -1279,6 +1279,177 @@
   color: var(--we-danger);
 }
 
+/* ============================================================
+   主题化视觉层 — 各内容类型「各有气质」
+   纯视觉，不改任何功能。动效均受 prefers-reduced-motion 保护。
+   ============================================================ */
+
+/* —— 天下大势：庙堂之高、缓慢、厚重，金石之气 —— */
+.we-trend-item {
+  border-left-width: 3px;
+  padding: 11px 13px 12px;
+  background:
+    linear-gradient(135deg, rgba(201,164,92,0.13) 0%, rgba(201,164,92,0.04) 30%, var(--we-bg) 60%);
+  box-shadow: inset 0 1px 0 rgba(216,189,130,0.10);
+}
+/* 顶端一道极细金线，如匾额 */
+.we-trend-item::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(216,189,130,0.55), transparent);
+}
+.we-trend-name {
+  letter-spacing: 1.5px;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+}
+.we-trend-scope {
+  text-transform: none;
+  opacity: 0.85;
+}
+/* 持续中的大势：一道极慢的金色流光扫过，势在运转 */
+.we-trend-item:not(.we-trend-ended)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(216,189,130,0.10) 50%, transparent 62%);
+  background-size: 260% 100%;
+  animation: we-trend-sheen 9s ease-in-out infinite;
+}
+@keyframes we-trend-sheen {
+  0%   { background-position: 130% 0; }
+  60%,100% { background-position: -130% 0; }
+}
+/* 已结束的大势：金气褪去，沉为顽石 */
+.we-trend-ended {
+  filter: grayscale(0.5);
+  border-left-color: var(--we-text3) !important;
+}
+.we-trend-ended::before,
+.we-trend-ended::after { display: none; }
+
+/* —— 事件链阶段：从萌芽到爆发、再到消散，各有体感 —— */
+/* 萌芽：刚起，气息微弱 */
+.we-stage-sprout { box-shadow: inset 2px 0 0 -1px rgba(214,184,90,0.5); }
+.we-stage-sprout .we-event-name > span:first-child { opacity: 0.92; }
+/* 发酵：温度上来 */
+.we-stage-ferment { background: linear-gradient(100deg, rgba(217,138,61,0.06), var(--we-bg) 55%); }
+/* 逼近：临界，左缘缓缓搏动 */
+.we-stage-loom { animation: we-loom-pulse 2.4s ease-in-out infinite; }
+@keyframes we-loom-pulse {
+  0%,100% { box-shadow: inset 3px 0 0 -1px rgba(207,95,63,0.55), -1px 0 10px -6px rgba(207,95,63,0.0); }
+  50%     { box-shadow: inset 3px 0 0 -1px rgba(207,95,63,0.95), -1px 0 14px -4px rgba(207,95,63,0.55); }
+}
+/* 爆发：出现时一记火光闪现，随后余烬般缓慢明灭 */
+.we-stage-erupt {
+  background:
+    radial-gradient(120% 80% at 0% 50%, rgba(224,116,101,0.26), transparent 60%),
+    #4a2326 !important;
+  animation: we-erupt-flash 0.85s ease-out 1, we-erupt-ember 3.4s ease-in-out 0.85s infinite;
+}
+@keyframes we-erupt-flash {
+  0%   { box-shadow: inset 0 0 0 0 rgba(255,140,90,0); transform: translateX(0); }
+  12%  { box-shadow: inset 0 0 28px 2px rgba(255,150,90,0.55); transform: translateX(1px); }
+  24%  { transform: translateX(-1px); }
+  36%  { transform: translateX(0); }
+  100% { box-shadow: inset 0 0 0 0 rgba(255,140,90,0); }
+}
+@keyframes we-erupt-ember {
+  0%,100% { border-left-color: #b93f3f; }
+  50%     { border-left-color: #e88a5a; }
+}
+.we-stage-erupt .we-event-stamp { animation: we-stamp-slam 0.5s cubic-bezier(.2,1.4,.4,1) 1; }
+@keyframes we-stamp-slam {
+  0%   { transform: rotate(14deg) scale(2.1); opacity: 0; }
+  60%  { transform: rotate(11deg) scale(0.92); opacity: 1; }
+  100% { transform: rotate(14deg) scale(1); opacity: 0.78; }
+}
+/* 消散：色褪、字淡、缓缓飘散归于沉寂 */
+.we-stage-fade {
+  background: #2c2c30 !important;
+  filter: grayscale(0.7);
+  opacity: 0.8;
+}
+.we-stage-fade .we-event-name,
+.we-stage-fade .we-event-meta { opacity: 0.72; }
+.we-stage-fade .we-event-stamp {
+  animation: we-fade-drift 5s ease-in-out infinite;
+  letter-spacing: 4px;
+}
+@keyframes we-fade-drift {
+  0%,100% { opacity: 0.32; transform: rotate(14deg) translateY(0); }
+  50%     { opacity: 0.62; transform: rotate(14deg) translateY(-2px); }
+}
+/* 已完成 / 已失败：正负终局，沉稳收束 */
+.we-stage-done { background: #1f3a2c !important; }
+.we-stage-failed { background: #3a2630 !important; filter: grayscale(0.3); }
+
+/* —— 风声四态：公告 / 消息 / 流言 / 舆情 —— */
+/* 公告：官府张榜，端正、有压痕 */
+.we-wind-announcement {
+  background: linear-gradient(var(--we-bg), var(--we-bg)) padding-box;
+  box-shadow: inset 0 1px 0 rgba(111,159,216,0.18), 0 1px 0 rgba(0,0,0,0.25);
+}
+.we-wind-announcement .we-wind-topic { letter-spacing: 0.5px; }
+/* 消息：朴素如实，clean */
+.we-wind-report .we-wind-topic { font-weight: 600; }
+/* 流言：耳语，斜体、低对比、隐约浮动 */
+.we-wind-rumor {
+  border-left-style: dashed;
+  background: repeating-linear-gradient(
+    -45deg, rgba(217,138,61,0.035) 0 6px, transparent 6px 12px), var(--we-bg);
+}
+.we-wind-rumor .we-wind-topic {
+  font-style: italic;
+  font-weight: 600;
+  opacity: 0.92;
+}
+.we-wind-rumor .we-wind-content span:last-child {
+  font-style: italic;
+  color: var(--we-text3);
+}
+.we-wind-rumor:hover { animation: we-rumor-waver 3s ease-in-out infinite; }
+@keyframes we-rumor-waver {
+  0%,100% { opacity: 0.94; }
+  50%     { opacity: 1; }
+}
+/* 舆情：众口成潮，底部一道缓缓涌动的紫波 */
+.we-wind-sentiment { overflow: hidden; }
+.we-wind-sentiment::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(168,128,196,0.7), transparent);
+  background-size: 50% 100%;
+  animation: we-sentiment-tide 4.5s linear infinite;
+}
+@keyframes we-sentiment-tide {
+  from { background-position: -50% 0; }
+  to   { background-position: 150% 0; }
+}
+
+/* —— 声誉：四维量表，去圆点为段条，更克制 —— */
+.we-rep-dot { border-radius: 2px; height: 10px; }
+.we-rep-dot-active { box-shadow: none; }
+.we-rep-card { box-shadow: inset 0 1px 0 rgba(255,255,255,0.03); }
+
+/* 统一降噪：减少动效偏好时，一切归于静止 */
+@media (prefers-reduced-motion: reduce) {
+  .we-trend-item:not(.we-trend-ended)::after,
+  .we-stage-loom,
+  .we-stage-erupt,
+  .we-stage-erupt .we-event-stamp,
+  .we-stage-fade .we-event-stamp,
+  .we-wind-rumor:hover,
+  .we-wind-sentiment::after {
+    animation: none !important;
+  }
+}
+
 /* ===== 平板竖屏适配 ===== */
 @media (max-width: 1024px) and (orientation: portrait) {
   #we-panel {
