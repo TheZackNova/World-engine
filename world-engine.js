@@ -157,20 +157,22 @@
         }
       }
 
-      // 正文组装前按对话楼层选择状态：
-      // 楼层未变化 = 重 roll，注入存档点；楼层变化 = 新轮次，注入当前状态。
+      // 正文组装前直接比较注入当下的对话层数和当前状态记录的层数：
+      // 对话层数更小 = 重 roll，注入存档点；否则注入当前状态。
       function applyInjectionForCurrentRound() {
-        const isNewRound = core.isNewRound();
-        if (!isNewRound) {
+        const state = core.loadState();
+        const chatLayer = core.getChatLayer();
+        const stateLayer = Number.isFinite(Number(state.chatLayer)) ? Number(state.chatLayer) : chatLayer;
+        if (chatLayer < stateLayer) {
           const checkpoint = core.restoreCheckpoint();
           if (checkpoint) {
-            console.log('[世界引擎] 正文注入判定：楼层未变化，注入存档点');
+            console.log(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} < 当前状态层数 ${stateLayer}，注入存档点`);
             applyInjection(checkpoint);
             return;
           }
-          console.warn('[世界引擎] 正文注入判定：楼层未变化但无存档点，回退到当前状态');
+          console.warn(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} < 当前状态层数 ${stateLayer}，但无存档点，回退到当前状态`);
         } else {
-          console.log('[世界引擎] 正文注入判定：楼层已变化，注入当前状态');
+          console.log(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} >= 当前状态层数 ${stateLayer}，注入当前状态`);
         }
         applyInjection();
       }
@@ -261,7 +263,7 @@
           core.saveState(state);
           core.clearCheckpoint();
         }
-        applyInjection();
+        applyInjectionForCurrentRound();
         console.log('[世界引擎] 聊天已加载，注入已更新');
       }
 
@@ -288,10 +290,10 @@
         console.warn('[世界引擎] 无法绑定事件');
       }
 
-      // 初始化时立即注入当前世界状态
-      applyInjection();
-      // 暴露 applyInjection 供手动推演调用
-      window.WORLD_ENGINE = { applyInjection };
+      // 初始化时立即按对话层数选择注入状态
+      applyInjectionForCurrentRound();
+      // 暴露按对话层数选择的注入入口供手动调用
+      window.WORLD_ENGINE = { applyInjection: applyInjectionForCurrentRound };
 
       // ========== 添加面板入口按钮到酒馆输入栏 ==========
       // 已移至 world-engine-ui.js 的 buildInputButton()

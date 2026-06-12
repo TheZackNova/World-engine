@@ -432,7 +432,7 @@ window.WORLD_ENGINE_CORE = (function() {
     addMemory, addEvent, addFaction, addWorldTrend, addWind,
     ensureEventFields, getUserName, renderUserName,
     saveCheckpoint, restoreCheckpoint, clearCheckpoint,
-    getChatFingerprint, saveFingerprint, loadFingerprint, isNewRound,
+    getChatLayer, getChatFingerprint, saveFingerprint, loadFingerprint, isNewRound,
     getCleanExport, importState
   };
 })();
