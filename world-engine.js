@@ -65,9 +65,6 @@
       let isEvolving = false;
       let autoEvolveTimer = null;
       let lastProcessedMessageKey = '';
-      // 最近一次生成的类型：'reroll'（swipe/regenerate）或 'normal'。
-      // 由 GENERATION_STARTED 在每次生成前写入，作为注入与推演的权威信号。
-      let lastGenType = 'normal';
       const AUTO_EVOLVE_DELAY = 1500;
 
       // ========== 注入管理 ==========
@@ -210,16 +207,18 @@
         isEvolving = true;
         try {
           const state = core.loadState();
-          const isReroll = (lastGenType === 'reroll');
+          const isNewRound = core.isNewRound();
           if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
           if (ui && ui.setEvolvingUI) ui.setEvolvingUI(true);
 
-          const success = await evolution.evolve(state, '', aiMsg, { isReroll });
+          const success = await evolution.evolve(state, '', aiMsg);
           if (success) {
             lastProcessedMessageKey = currentKey;
             ledger.recordChanges(state);
-            // 注入由下一次 GENERATION_STARTED 权威决定；这里仅刷新存储快照。
-            applyInjection();
+            // 重 roll 时 onMessageSwiped 已注入存档点，推演完成后不覆盖
+            if (isNewRound) {
+              applyInjection();
+            }
             console.log('[世界引擎] ✅ 推演完成，当前第', state.round, '轮');
           } else {
             console.warn('[世界引擎] ⚠️ 推演失败或已中止');
@@ -249,25 +248,10 @@
       }
 
       function onMessageSwiped() {
-        // 注入交由 GENERATION_STARTED 权威处理；这里只取消待执行的推演定时器。
         clearAutoEvolveTimer();
-      }
-
-      // 每次生成开始（在 prompt 组装前）由酒馆触发，带生成类型。
-      // swipe/regenerate（重 roll）→ 注入存档点；其余 → 注入当前状态。
-      function onGenerationStarted(type, _options, _dryRun) {
-        try {
-          if (type === 'swipe' || type === 'regenerate') {
-            lastGenType = 'reroll';
-            const checkpoint = core.restoreCheckpoint();
-            applyInjection(checkpoint || undefined);
-          } else {
-            lastGenType = 'normal';
-            applyInjection();
-          }
-        } catch(e) {
-          console.error('[世界引擎] GENERATION_STARTED 处理失败', e);
-        }
+        // 重 roll 时注入存档点状态；若无存档点则回退到当前状态
+        const checkpoint = core.restoreCheckpoint();
+        applyInjection(checkpoint || undefined);
       }
 
       // ========== 事件绑定 ==========
@@ -277,7 +261,6 @@
         ctx.eventSource.on(autoEvolveEvent, onMessageReceived);
         ctx.eventSource.on(ctx.event_types?.CHAT_LOADED || 'chat_loaded', onChatLoaded);
         ctx.eventSource.on(ctx.event_types?.MESSAGE_SWIPED || 'message_swiped', onMessageSwiped);
-        ctx.eventSource.on(ctx.event_types?.GENERATION_STARTED || 'generation_started', onGenerationStarted);
         console.log('[世界引擎] 事件绑定成功，自动推演事件:', autoEvolveEvent);
       } else {
         console.warn('[世界引擎] 无法绑定事件');

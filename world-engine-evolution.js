@@ -633,7 +633,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
   let _abortController = null;
   let _isRunning = false;
 
-  async function evolve(state, userMsg, aiMsg, opts = {}) {
+  async function evolve(state, userMsg, aiMsg) {
     if (_isRunning) {
       console.warn('[世界引擎] ⚠️ 已有推演正在进行，跳过重复请求');
       return false;
@@ -641,9 +641,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
 
     delete state._terminalEventsThisRound;
     const backup = JSON.parse(JSON.stringify(state));
-    // 优先使用调用方传入的权威信号（来自 GENERATION_STARTED 的生成类型）；
-    // 缺省时回退到指纹判断（手动推演按钮等场景）。
-    const isNew = (typeof opts.isReroll === 'boolean') ? !opts.isReroll : core.isNewRound();
+    const isNew = core.isNewRound();
 
     if (isNew) {
       console.log('[世界引擎] 📌 新轮次');
