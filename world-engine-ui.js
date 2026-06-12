@@ -507,11 +507,13 @@ window.WORLD_ENGINE_UI = (function() {
 
   function renderReputation(rep) {
     if (!rep) return '<div class="we-empty">暂无声誉数据</div>';
-    const levels = ['天怒人怨','声名狼藉','默默无闻','小有名气','受人尊敬','万众敬仰'];
-    const levelColors = { '天怒人怨':'#e05555', '声名狼藉':'#d97a5a', '默默无闻':'#7a8a9a', '小有名气':'#8fa87a', '受人尊敬':'#5aaac4', '万众敬仰':'#c9a45c' };
+    const levels = ['天怒人怨','声名狼藉','默默无闻','受人尊敬','万众敬仰'];
+    const levelColors = { '天怒人怨':'#e05555', '声名狼藉':'#d97a5a', '默默无闻':'#7a8a9a', '受人尊敬':'#6cae8e', '万众敬仰':'#c9a45c' };
+    const legacyMap = { '小有名气':'受人尊敬' };
     const dimLabels = { authority:'朝堂', common:'市井', shadow:'草莽', circuit:'同道' };
     const dimIcons = { authority:'🏛️', common:'🌾', shadow:'🌑', circuit:'⚒️' };
-    return '<div class="we-rep-grid">' + Object.entries(rep).filter(([k]) => k !== 'lastChange').map(([key, val]) => {
+    return '<div class="we-rep-grid">' + Object.entries(rep).filter(([k]) => k !== 'lastChange').map(([key, rawVal]) => {
+      const val = legacyMap[rawVal] || rawVal;
       const cn = dimLabels[key] || key;
       const icon = dimIcons[key] || '';
       const idx = levels.indexOf(val);

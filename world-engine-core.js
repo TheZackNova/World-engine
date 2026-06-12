@@ -145,6 +145,10 @@ window.WORLD_ENGINE_CORE = (function() {
       return wind;
     });
     state.reputation = state.reputation || { authority: '默默无闻', common: '默默无闻', shadow: '默默无闻', circuit: '默默无闻' };
+    // 六级→五级迁移：旧存档的"小有名气"归并到"受人尊敬"
+    for (const _dim of ['authority', 'common', 'shadow', 'circuit']) {
+      if (state.reputation[_dim] === '小有名气') state.reputation[_dim] = '受人尊敬';
+    }
     if (!state.reputation.lastChange) state.reputation.lastChange = '';
     state.economy = state.economy || { climate: '平稳', signals: [] };
     if (!state.economy.signals) state.economy.signals = [];
