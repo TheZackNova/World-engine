@@ -68,9 +68,49 @@ window.WORLD_ENGINE_API = (function() {
     const choice = data.choices?.[0];
     if (!choice) throw new Error('API 返回缺少 choices[0]');
     if (choice.finish_reason === 'length') {
-      throw new Error('API 输出达到长度上限并被截断，请提高输出 token 上限或减少世界状态内容');
+      console.warn('[世界引擎] API 输出达到长度上限，将读取截断前已完整返回的字段');
     }
     return choice.message?.content || '';
+  }
+
+  function repairTruncatedJSON(content) {
+    const rootStart = content.indexOf('{');
+    if (rootStart === -1) return null;
+
+    const stack = [];
+    const candidates = [];
+    let inString = false;
+    let escaped = false;
+
+    for (let i = rootStart; i < content.length; i++) {
+      const char = content[i];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+      if (char === '"') {
+        inString = true;
+      } else if (char === '{' || char === '[') {
+        stack.push(char);
+      } else if (char === '}' || char === ']') {
+        stack.pop();
+      } else if (char === ',' && stack.length > 0) {
+        candidates.push({
+          end: i,
+          suffix: stack.slice().reverse().map(open => open === '{' ? '}' : ']').join('')
+        });
+      }
+    }
+
+    for (let i = candidates.length - 1; i >= 0; i--) {
+      const candidate = content.slice(rootStart, candidates[i].end) + candidates[i].suffix;
+      try {
+        return JSON.parse(candidate);
+      } catch(e) {}
+    }
+    return null;
   }
 
   /**
@@ -113,7 +153,7 @@ window.WORLD_ENGINE_API = (function() {
         }
       }
     }
-    return result;
+    return result || repairTruncatedJSON(content);
   }
 
   /**
