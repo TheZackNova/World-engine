@@ -868,6 +868,11 @@
   font-size: 12px;
 }
 
+/* 最后一栏（来源）给右下角操作图标让位，文字提前换行 */
+.we-wind-item > .we-wind-field:last-of-type { padding-right: 84px; }
+/* 编辑态下操作图标移到顶部，无需让位 */
+.we-wind-item:has(.we-event-editor) > .we-wind-field:last-of-type { padding-right: 0; }
+
 .we-wind-label {
   color: var(--we-text3);
   font-size: 10px;
@@ -1391,6 +1396,8 @@
 
 /* 公告：官府张榜。顶端整幅压边、内文端正、右上一枚朱印 */
 .we-wind-announcement {
+  position: relative;
+  overflow: hidden;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--wind-accent) 9%, var(--we-bg)) 0%, var(--we-bg) 38%);
   border-top: 2px solid color-mix(in srgb, var(--wind-accent) 60%, transparent);
@@ -1401,24 +1408,65 @@
   letter-spacing: 1px;
   font-weight: 800;
 }
-.we-wind-announcement .we-wind-header::after {
-  content: "印";
-  margin-left: auto;
-  width: 17px; height: 17px;
-  display: grid; place-items: center;
-  font-size: 10px; font-weight: 700;
-  color: color-mix(in srgb, var(--wind-accent) 85%, #fff);
-  border: 1px solid color-mix(in srgb, var(--wind-accent) 55%, transparent);
-  border-radius: 3px;
-  opacity: 0.8;
+/* 中央斜盖的半透明「公告」朱印（水印观感，不挡操作） */
+.we-wind-announcement::after {
+  content: "公告";
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-21deg);
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  padding: 4px 14px 6px;
+  color: color-mix(in srgb, var(--wind-accent) 70%, transparent);
+  border: 3px double color-mix(in srgb, var(--wind-accent) 55%, transparent);
+  border-radius: 8px;
+  opacity: 0.16;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 0;
 }
+/* 内容压在印章之上 */
+.we-wind-announcement > .we-wind-header,
+.we-wind-announcement > .we-wind-field,
+.we-wind-announcement > .we-event-editor,
+.we-wind-announcement > .we-event-actions { position: relative; z-index: 1; }
+.we-wind-announcement > .we-event-actions { position: absolute; }
+/* 流言编辑器也要浮到雾之上 */
+.we-wind-rumor > .we-event-editor { position: relative; z-index: 3; }
 
-/* 消息：电文实录。素白、等宽标签、字段间细分割线，毫无修饰 */
+/* 消息：电讯实录。顶端一道电报穿孔带，标题领以讯首符，等宽字段 */
 .we-wind-report {
+  position: relative;
+  overflow: hidden;
   background: var(--we-bg);
   border: 1px solid var(--we-border);
+  padding-top: 12px;
 }
-.we-wind-report .we-wind-topic { font-weight: 600; letter-spacing: 0.2px; }
+/* 电报穿孔带：交替的孔与齿，像撕下的电文纸条 */
+.we-wind-report::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 5px;
+  background:
+    repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--wind-accent) 55%, transparent) 0 6px,
+      transparent 6px 13px);
+  -webkit-mask: radial-gradient(circle 2px at 6.5px 0, transparent 98%, #000 100%) 0 0 / 13px 5px repeat-x;
+          mask: radial-gradient(circle 2px at 6.5px 0, transparent 98%, #000 100%) 0 0 / 13px 5px repeat-x;
+  opacity: 0.6;
+}
+.we-wind-report .we-wind-topic {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.we-wind-report .we-wind-topic::before {
+  content: "› ";
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-weight: 700;
+  color: var(--wind-accent);
+}
 .we-wind-report .we-wind-label {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   letter-spacing: 0;
@@ -1448,6 +1496,26 @@
   color: var(--we-text3);
 }
 .we-wind-rumor .we-wind-field { border-top-color: rgba(255,255,255,0.03); }
+/* 表面浮一层灰雾，似真似假、看不真切 */
+.we-wind-rumor {
+  position: relative;
+  overflow: hidden;
+}
+.we-wind-rumor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 30% 20%, rgba(150,160,170,0.10), transparent 60%),
+    radial-gradient(100% 80% at 80% 90%, rgba(120,130,140,0.09), transparent 55%),
+    linear-gradient(180deg, rgba(140,150,160,0.05), rgba(140,150,160,0.02));
+  backdrop-filter: blur(0.4px);
+  -webkit-backdrop-filter: blur(0.4px);
+  z-index: 2;
+}
+/* 操作图标仍需可点，浮到雾之上 */
+.we-wind-rumor > .we-event-actions { position: absolute; z-index: 3; }
 .we-wind-rumor:hover { animation: we-rumor-waver 3.4s ease-in-out infinite; }
 @keyframes we-rumor-waver {
   0%,100% { opacity: 0.9; transform: translateX(0); }
