@@ -207,6 +207,7 @@
         isEvolving = true;
         try {
           const state = core.loadState();
+          const isNewRound = core.isNewRound();
           if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
           if (ui && ui.setEvolvingUI) ui.setEvolvingUI(true);
 
@@ -214,7 +215,10 @@
           if (success) {
             lastProcessedMessageKey = currentKey;
             ledger.recordChanges(state);
-            applyInjection();
+            // 重 roll 时 onMessageSwiped 已注入存档点，推演完成后不覆盖
+            if (isNewRound) {
+              applyInjection();
+            }
             console.log('[世界引擎] ✅ 推演完成，当前第', state.round, '轮');
           } else {
             console.warn('[世界引擎] ⚠️ 推演失败或已中止');
