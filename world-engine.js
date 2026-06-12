@@ -157,6 +157,24 @@
         }
       }
 
+      // 正文组装前按对话楼层选择状态：
+      // 楼层未变化 = 重 roll，注入存档点；楼层变化 = 新轮次，注入当前状态。
+      function applyInjectionForCurrentRound() {
+        const isNewRound = core.isNewRound();
+        if (!isNewRound) {
+          const checkpoint = core.restoreCheckpoint();
+          if (checkpoint) {
+            console.log('[世界引擎] 正文注入判定：楼层未变化，注入存档点');
+            applyInjection(checkpoint);
+            return;
+          }
+          console.warn('[世界引擎] 正文注入判定：楼层未变化但无存档点，回退到当前状态');
+        } else {
+          console.log('[世界引擎] 正文注入判定：楼层已变化，注入当前状态');
+        }
+        applyInjection();
+      }
+
       // ========== 收到完整回复后：世界推演 + 记录账本 ==========
       function getMessageKey(ctx, chat, message) {
         const messageId = message?.mesId ?? message?.message_id ?? message?.send_date ?? (chat.length - 1);
@@ -215,7 +233,7 @@
           if (success) {
             lastProcessedMessageKey = currentKey;
             ledger.recordChanges(state);
-            // 重 roll 时 onMessageSwiped 已注入存档点，推演完成后不覆盖
+            // 重 roll 时正文已按楼层注入存档点，推演完成后不覆盖
             if (isNewRound) {
               applyInjection();
             }
@@ -249,9 +267,12 @@
 
       function onMessageSwiped() {
         clearAutoEvolveTimer();
-        // 重 roll 时注入存档点状态；若无存档点则回退到当前状态
-        const checkpoint = core.restoreCheckpoint();
-        applyInjection(checkpoint || undefined);
+        applyInjectionForCurrentRound();
+      }
+
+      // 只借用生成开始事件作为正文组装时机；注入哪份状态仍完全由楼层数判断。
+      function onGenerationStarted() {
+        applyInjectionForCurrentRound();
       }
 
       // ========== 事件绑定 ==========
@@ -261,6 +282,7 @@
         ctx.eventSource.on(autoEvolveEvent, onMessageReceived);
         ctx.eventSource.on(ctx.event_types?.CHAT_LOADED || 'chat_loaded', onChatLoaded);
         ctx.eventSource.on(ctx.event_types?.MESSAGE_SWIPED || 'message_swiped', onMessageSwiped);
+        ctx.eventSource.on(ctx.event_types?.GENERATION_STARTED || 'generation_started', onGenerationStarted);
         console.log('[世界引擎] 事件绑定成功，自动推演事件:', autoEvolveEvent);
       } else {
         console.warn('[世界引擎] 无法绑定事件');
