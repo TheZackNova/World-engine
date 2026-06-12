@@ -150,7 +150,6 @@
   white-space: nowrap;
   pointer-events: none;
 }
-.we-ball-tip:not(:empty) { display: block; }
 #we-input-btn.we-ball:hover .we-ball-tip:not(:empty) { display: block; }
 
 /* 兼容旧元素 */
