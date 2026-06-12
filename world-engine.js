@@ -73,17 +73,17 @@
       function registerInjection(content) {
         try {
           const ctx = SillyTavern.getContext();
-          // 新版 ST: registerInjection
+          // 新版 ST: registerInjection，depth:0 插到聊天末尾（用户消息之后），对缓存影响最小
           if (typeof ctx.registerInjection === 'function') {
             if (typeof ctx.unregisterInjection === 'function') {
               ctx.unregisterInjection(INJECTION_NAME);
             }
-            ctx.registerInjection(INJECTION_NAME, content, { position: 'before', priority: 10 });
+            ctx.registerInjection(INJECTION_NAME, content, { position: 'in_chat', depth: 1, role: 'system' });
             return true;
           }
-          // 中版 ST: setExtensionPrompt
+          // 中版 ST: setExtensionPrompt，position=2 为 in-chat，depth=1 为用户消息正前一位
           if (typeof ctx.setExtensionPrompt === 'function') {
-            ctx.setExtensionPrompt(INJECTION_NAME, content, 'before', 10);
+            ctx.setExtensionPrompt(INJECTION_NAME, content, 2, 1);
             return true;
           }
           // 旧版 ST: extensionPrompts 数组
@@ -91,7 +91,7 @@
             ctx.extensionPrompts = ctx.extensionPrompts.filter(p => p.name !== INJECTION_NAME);
             ctx.extensionPrompts.push({
               name: INJECTION_NAME, content: content,
-              role: 'system', position: 'before', priority: 10
+              role: 'system', position: 2, depth: 1
             });
             return true;
           }
