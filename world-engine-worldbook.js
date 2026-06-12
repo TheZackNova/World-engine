@@ -56,6 +56,8 @@ window.WORLD_ENGINE_WORLDBOOK = (function() {
     const entries = await module.getSortedEntries();
     return (Array.isArray(entries) ? entries : [])
       .filter(entry => entry && entry.uid !== undefined && String(entry.content || '').trim())
+      // 完全无视 TavernDB-ACU 开头的条目：不显示、不可选、不注入
+      .filter(entry => !getEntryTitle(entry).startsWith('TavernDB-ACU'))
       .map(entry => ({
         id: getEntryId(entry),
         uid: entry.uid,
