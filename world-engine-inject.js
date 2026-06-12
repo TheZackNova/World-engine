@@ -3,6 +3,41 @@ window.WORLD_ENGINE_INJECT = (function() {
   const core = window.WORLD_ENGINE_CORE;
   const ledger = window.WORLD_ENGINE_LEDGER;
 
+  // 声誉判词：把等级翻译成给正文模型看的人话，避免注入光秃秃的等级标签
+  const REP_DIM_NAME = { authority: '朝堂之上', common: '市井之间', shadow: '草莽之中', circuit: '同道之间' };
+  const REP_VERDICT = {
+    authority: { // 朝堂之上 —— 守法/顺从 ↔ 挑衅/危险
+      天怒人怨: '朝堂视为眼中钉，已被通缉问罪，官面上人人喊打',
+      声名狼藉: '在官场名声极坏，被当成麻烦与危险分子，处处提防',
+      默默无闻: '朝堂无人识其名，进不了当权者的眼',
+      受人尊敬: '官面上颇有声望，被视作可用可信之人',
+      万众敬仰: '深得当权者倚重，朝堂之上一言九鼎',
+    },
+    common: { // 市井之间 —— 仁善/保护 ↔ 暴戾/威胁
+      天怒人怨: '百姓恨之入骨，提起就唾骂，避之如蛇蝎',
+      声名狼藉: '市井口碑极差，被当成祸害，街坊见了绕道走',
+      默默无闻: '街面上没什么人听过他，泯然众人',
+      受人尊敬: '百姓念其好，口碑甚佳，当他是仗义之人',
+      万众敬仰: '万民拥戴，所到之处百姓夹道，被奉若再生父母',
+    },
+    shadow: { // 草莽之中 —— 有种/敢扛 ↔ 没种/欺弱
+      天怒人怨: '江湖人人喊打，黑市报他名字就有人想动手',
+      声名狼藉: '草莽看不起他，当成欺软怕硬的怂货，没人愿与之共事',
+      默默无闻: '道上没人认得他，江湖查无此人',
+      受人尊敬: '江湖上有几分名头，道上的人敬他三分有种',
+      万众敬仰: '草莽奉为豪杰，一句话能调动一方江湖人马',
+    },
+    circuit: { // 同道之间 —— 技艺/守规/贡献 ↔ 砸招牌/背叛
+      天怒人怨: '同行视为行业败类，被逐出圈子，人人喊打',
+      声名狼藉: '同道鄙其手艺与人品，背了砸招牌、卖同行的名声',
+      默默无闻: '行当里没人知道这号人',
+      受人尊敬: '同行敬重其技艺与德行，是行里数得上的人物',
+      万众敬仰: '被尊为一代宗师，同道奉其为标杆',
+    },
+  };
+  // 旧存档兼容：六级时期的"小有名气"归入"受人尊敬"
+  const REP_LEGACY = { 小有名气: '受人尊敬' };
+
   function buildContext(worldState, tags) {
     const rulesLoader = window.WORLD_ENGINE_RULES;
     const rulesSummary = rulesLoader ? rulesLoader.getCoreRulesSummary() : '';
@@ -50,9 +85,14 @@ window.WORLD_ENGINE_INJECT = (function() {
       `${t.name}（${t.scope || '天下'}）：${t.description}`
     ).join('；') || '无';
 
-    // 声誉
+    // 声誉：注入人话判词，而非光秃秃的等级标签
     const rep = worldState.reputation || {};
-    const repText = `朝堂:${rep.authority} 市井:${rep.common} 草莽:${rep.shadow} 同道:${rep.circuit}`;
+    const repText = ['authority', 'common', 'shadow', 'circuit'].map(k => {
+      const lv = REP_LEGACY[rep[k]] || rep[k];
+      const verdict = REP_VERDICT[k] && REP_VERDICT[k][lv];
+      if (!verdict) return '';
+      return `在${REP_DIM_NAME[k]}${lv}，${verdict}`;
+    }).filter(Boolean).join('。') + '。';
     const repChange = rep.lastChange ? `（${rep.lastChange}）` : '';
 
     // 经济信号：全注入
