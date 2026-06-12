@@ -119,11 +119,12 @@
       }
 
       // ========== 注入世界状态到正文 prompt ==========
-      function applyInjection() {
+      // stateOverride: 传入则使用该状态（重 roll 时用存档点），否则用当前状态
+      function applyInjection(stateOverride) {
         try {
           const ctx = SillyTavern.getContext();
           if (!ctx) return;
-          const state = core.loadState();
+          const state = stateOverride || core.loadState();
           const currentRound = state.round;
 
           const chatHistory = ctx.chat || [];
@@ -143,11 +144,14 @@
 
           const context = inject.buildContext(state, tags);
 
-          state.lastInjection = { timestamp: Date.now(), round: currentRound, context, tagsUsed: tags };
-          core.saveState(state);
+          // 只在使用当前状态时写回（存档点状态不应被覆盖）
+          if (!stateOverride) {
+            state.lastInjection = { timestamp: Date.now(), round: currentRound, context, tagsUsed: tags };
+            core.saveState(state);
+          }
 
           registerInjection(context);
-          console.log(`[世界引擎] 注入完成 (round ${currentRound}, ${context.length} chars)`);
+          console.log(`[世界引擎] 注入完成 (round ${currentRound}, ${context.length} chars)${stateOverride ? ' [存档点]' : ''}`);
         } catch(e) {
           console.error('[世界引擎] 注入处理失败', e);
         }
@@ -241,6 +245,9 @@
 
       function onMessageSwiped() {
         clearAutoEvolveTimer();
+        // 重 roll 时注入存档点状态；若无存档点则回退到当前状态
+        const checkpoint = core.restoreCheckpoint();
+        applyInjection(checkpoint || undefined);
       }
 
       // ========== 事件绑定 ==========
