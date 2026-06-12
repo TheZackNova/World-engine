@@ -868,10 +868,12 @@
   font-size: 12px;
 }
 
-/* 最后一栏（来源）给右下角操作图标让位，文字提前换行 */
-.we-wind-item > .we-wind-field:last-of-type { padding-right: 84px; }
-/* 编辑态下操作图标移到顶部，无需让位 */
-.we-wind-item:has(.we-event-editor) > .we-wind-field:last-of-type { padding-right: 0; }
+/* 最后一栏（来源）给右下角操作图标让位，文字提前换行。
+   用 :has 兄弟选择器精确命中「其后再无 .we-wind-field 的字段」，
+   避免 :last-of-type 把末尾的 actions/editor 也算进 div 同类的坑。 */
+.we-wind-item .we-wind-field:not(:has(~ .we-wind-field)) { padding-right: 86px; }
+/* 编辑态无操作图标，取消让位 */
+.we-wind-item:has(> .we-event-editor) .we-wind-field:not(:has(~ .we-wind-field)) { padding-right: 0; }
 
 .we-wind-label {
   color: var(--we-text3);
@@ -1414,14 +1416,14 @@
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%) rotate(-21deg);
-  font-size: 34px;
+  font-size: 36px;
   font-weight: 900;
-  letter-spacing: 6px;
-  padding: 4px 14px 6px;
-  color: color-mix(in srgb, var(--wind-accent) 70%, transparent);
-  border: 3px double color-mix(in srgb, var(--wind-accent) 55%, transparent);
-  border-radius: 8px;
-  opacity: 0.16;
+  letter-spacing: 8px;
+  padding: 5px 16px 7px;
+  color: color-mix(in srgb, var(--wind-accent) 92%, #fff);
+  border: 4px double color-mix(in srgb, var(--wind-accent) 80%, transparent);
+  border-radius: 9px;
+  opacity: 0.32;
   pointer-events: none;
   white-space: nowrap;
   z-index: 0;
@@ -1461,12 +1463,6 @@
   font-weight: 600;
   letter-spacing: 0.2px;
 }
-.we-wind-report .we-wind-topic::before {
-  content: "› ";
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-  font-weight: 700;
-  color: var(--wind-accent);
-}
 .we-wind-report .we-wind-label {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   letter-spacing: 0;
@@ -1476,15 +1472,6 @@
 /* 流言：耳语。无边界、融进暗处、斜体低语、隐隐起伏 */
 .we-wind-rumor {
   background: transparent;
-  padding-left: 14px;
-}
-.we-wind-rumor::before {
-  content: "“";
-  position: absolute;
-  left: -1px; top: 2px;
-  font-size: 26px; line-height: 1;
-  color: var(--wind-accent);
-  opacity: 0.35;
 }
 .we-wind-rumor .we-wind-topic {
   font-style: italic;
@@ -1565,7 +1552,6 @@
   letter-spacing: 0.5px;
   color: color-mix(in srgb, var(--wind-level-color) 80%, var(--we-text));
 }
-.we-wind-lv4::before { opacity: 0.85; }  /* 流言到 Lv4 引号更显 */
 /* Lv4 满城风雨：极轻的呼吸光圈 */
 .we-wind-lv4 { animation: we-wind-clamor 3.6s ease-in-out infinite; }
 @keyframes we-wind-clamor {
