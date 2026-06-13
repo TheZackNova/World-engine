@@ -1846,37 +1846,94 @@
   letter-spacing: 0.03em;
 }
 
-/* ===== 分类卡片格 ===== */
-.we-cat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 10px 0 14px;
+/* ===== 主页导航列表 ===== */
+.we-nav-list {
+  margin: 8px 0 14px;
 }
-.we-cat-card {
-  padding: 12px 14px;
-  background: var(--we-bg2);
-  border: 1px solid var(--we-border);
-  border-radius: 8px;
+.we-nav-row {
+  display: flex;
+  align-items: stretch;
+  min-height: 54px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  user-select: none;
+  border-radius: 4px;
+  padding: 0 2px 0 0;
+  transition: background 0.12s;
 }
-.we-cat-card:hover {
-  border-color: var(--we-accent);
-  background: var(--we-surface);
+.we-nav-row:hover {
+  background: rgba(255,255,255,0.025);
 }
-.we-cat-card:active {
-  background: var(--we-bg-hl);
+.we-nav-label {
+  width: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--we-beige);
+  letter-spacing: 0.04em;
+  transition: color 0.18s;
+  padding-right: 2px;
 }
-.we-cat-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--we-text);
-  margin-bottom: 3px;
+.we-nav-row:hover .we-nav-label {
+  color: var(--we-tier-color, var(--we-accent));
 }
-.we-cat-sub {
-  font-size: 11px;
+.we-nav-track {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.we-nav-line {
+  width: 1px;
+  flex: 1;
+  background: rgba(208,170,88,0.16);
+  min-height: 10px;
+}
+.we-nav-line-hidden {
+  background: transparent;
+}
+.we-nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(208,170,88,0.32);
+  background: transparent;
+  flex-shrink: 0;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+}
+.we-nav-row:hover .we-nav-dot {
+  border-color: var(--we-tier-color, var(--we-accent));
+  background: var(--we-tier-color, var(--we-accent));
+  box-shadow: 0 0 8px var(--we-tier-color, var(--we-accent)), 0 0 3px var(--we-tier-color, var(--we-accent));
+}
+.we-nav-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.we-nav-sub {
+  font-size: 12px;
+  color: var(--we-text2);
+}
+.we-nav-poem {
+  display: none;
+  font-size: 12px;
+  color: var(--we-tier-color, var(--we-accent));
+  letter-spacing: 0.08em;
+}
+.we-nav-row:hover .we-nav-sub { display: none; }
+.we-nav-row:hover .we-nav-poem { display: block; }
+.we-nav-arrow {
+  flex-shrink: 0;
+  font-size: 10px;
   color: var(--we-text3);
-  line-height: 1.4;
+  align-self: center;
+  margin-left: 8px;
+  transition: color 0.18s;
+}
+.we-nav-row:hover .we-nav-arrow {
+  color: var(--we-tier-color, var(--we-accent));
 }

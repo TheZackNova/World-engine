@@ -279,12 +279,27 @@ window.WORLD_ENGINE_UI = (function() {
   }
 
   function renderHomeView(s, layer, scope) {
-    const cards = [
-      { view: 'situation', name: '局势', sub: '天下大势 · 区域事件 · 账本' },
-      { view: 'events',    name: '事件', sub: '事件链 · 风声 · 影响链' },
-      { view: 'relations', name: '关系', sub: '声誉 · 势力 · 仇敌录' },
-      { view: 'resources', name: '资源', sub: '经济 · 秘密' },
+    const stab = computeWorldStability(s);
+    const tierColor = STABILITY_TIER_COLOR[stab.tier] || '#58b8a9';
+
+    const rows = [
+      { view: 'situation', label: '局势', sub: '天下大势 · 区域事件 · 账本', poem: '天下云集响应' },
+      { view: 'events',    label: '事件', sub: '事件链 · 风声 · 影响链',     poem: '事至而应' },
+      { view: 'relations', label: '关系', sub: '声誉 · 势力 · 仇敌录',       poem: '同声相应，同气相求' },
+      { view: 'resources', label: '资源', sub: '经济 · 秘密',               poem: '地藏无尽藏' },
     ];
+
+    const navRows = rows.map((r, i) => {
+      const topLine = i === 0 ? '<div class="we-nav-line we-nav-line-hidden"></div>' : '<div class="we-nav-line"></div>';
+      const botLine = i === rows.length - 1 ? '<div class="we-nav-line we-nav-line-hidden"></div>' : '<div class="we-nav-line"></div>';
+      return '<div class="we-nav-row" data-view="' + r.view + '">'
+        + '<div class="we-nav-label">' + r.label + '</div>'
+        + '<div class="we-nav-track">' + topLine + '<div class="we-nav-dot"></div>' + botLine + '</div>'
+        + '<div class="we-nav-content"><span class="we-nav-sub">' + r.sub + '</span><span class="we-nav-poem">' + r.poem + '</span></div>'
+        + '<i class="fa-solid fa-chevron-right we-nav-arrow"></i>'
+        + '</div>';
+    }).join('');
+
     return '<div class="we-home-topbar">'
       + '<div class="we-actions-bar">'
       + '<button class="we-btn we-btn-primary" id="we-btn-redo" title="把存档点喂给后台推演，重出本轮结果">重新推演</button>'
@@ -295,9 +310,7 @@ window.WORLD_ENGINE_UI = (function() {
       + '<button class="we-icon-btn" id="we-btn-settings-open" title="设置"><i class="fa-solid fa-gear"></i></button>'
       + '</div>'
       + renderWorldCore(s)
-      + '<div class="we-cat-grid">'
-      + cards.map(c => '<div class="we-cat-card" data-view="' + c.view + '"><div class="we-cat-name">' + c.name + '</div><div class="we-cat-sub">' + c.sub + '</div></div>').join('')
-      + '</div>'
+      + '<div class="we-nav-list" style="--we-tier-color:' + tierColor + ';">' + navRows + '</div>'
       + '<div class="we-section"><div class="we-section-title">世界摘要</div><div class="we-digest">' + u(s.worldDigest) + '</div></div>';
   }
 
@@ -1800,8 +1813,8 @@ window.WORLD_ENGINE_UI = (function() {
     const settingsOpenBtn = document.getElementById('we-btn-settings-open');
     if (settingsOpenBtn) settingsOpenBtn.onclick = () => { _currentView = 'settings'; refresh(); };
 
-    document.querySelectorAll('.we-cat-card').forEach(card => {
-      card.onclick = () => { _currentView = card.dataset.view; refresh(); };
+    document.querySelectorAll('.we-nav-row[data-view]').forEach(row => {
+      row.onclick = () => { _currentView = row.dataset.view; refresh(); };
     });
 
     // ===== 区块折叠/展开事件 =====
