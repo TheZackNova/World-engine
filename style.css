@@ -141,13 +141,10 @@
 /* ===== 面板容器 ===== */
 #we-panel {
   position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 520px;
-  max-width: 92vw;
-  height: 72vh;
-  max-height: 780px;
-  min-height: 380px;
+  right: 12px;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  width: min(420px, calc(100vw - 24px));
   background: rgba(9,20,27,0.97);
   backdrop-filter: blur(10px);
   color: var(--we-text);
@@ -477,7 +474,7 @@
   font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 3px;
+  letter-spacing: 1px;
   margin-top: 3px;
   opacity: 0.9;
 }
@@ -1767,16 +1764,6 @@
 
 /* ===== 平板竖屏适配 ===== */
 @media (max-width: 1024px) and (orientation: portrait) {
-  #we-panel {
-    width: 100vw;
-    height: calc(100dvh - 70px);
-    max-width: 100vw;
-    max-height: none;
-    bottom: 0;
-    right: 0;
-    top: auto;
-    border-radius: 14px 14px 0 0;
-  }
   #we-input-btn, #we-external-status {
     z-index: 10005 !important;
   }
@@ -1784,29 +1771,12 @@
 
 /* ===== 手机适配 ===== */
 @media (max-width: 768px) {
-  #we-panel {
-    width: 100vw;
-    height: calc(100dvh - 70px);
-    max-width: 100vw;
-    max-height: none;
-    bottom: 0;
-    right: 0;
-    top: auto;
-    border-radius: 14px 14px 0 0;
-  }
   .we-rep-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  #we-panel {
-    width: 100vw;
-    height: calc(100dvh - 60px);
-    border-radius: 0;
-    top: 0;
-    bottom: auto;
-  }
   .we-rep-dot {
     width: 9px;
     height: 9px;
