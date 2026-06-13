@@ -96,6 +96,9 @@ window.WORLD_ENGINE_UI = (function() {
   }
 
   let _activeTab = 'current';
+  // 推演进行中标志：重 roll 推演时，新结果（C）还没算出来，
+  // 面板不能闪回上一支的旧当前状态（A），要继续显示存档点基底（B）。
+  let _evolving = false;
 
   /**
    * 计算此刻实际注入正文的那一份世界状态（与 world-engine.js
@@ -105,6 +108,11 @@ window.WORLD_ENGINE_UI = (function() {
    * 返回的 scope 同时决定编辑写回哪个存储桶。
    */
   function getActiveInjected(state, checkpoint) {
+    // 重 roll 推演进行中：新结果 C 还没写回，当前状态仍是上一支旧值 A，
+    // 此时继续显示存档点基底 B，等推演完成 setEvolvingUI(false)+refresh 再翻成 C。
+    if (_evolving && checkpoint && core.isNewRound && !core.isNewRound()) {
+      return { state: checkpoint, scope: 'checkpoint', layer: getCheckpointLayer(checkpoint) };
+    }
     const chatLayer = core.getChatLayer();
     const stateLayer = Number.isFinite(Number(state.chatLayer)) ? Number(state.chatLayer) : chatLayer;
     if (chatLayer < stateLayer && checkpoint) {
@@ -2386,6 +2394,10 @@ window.WORLD_ENGINE_UI = (function() {
 
   // ========== 推演 UI 状态切换 ==========
   function setEvolvingUI(active) {
+    _evolving = !!active;
+    // 推演开始时立刻按「推演中」重渲染，重 roll 时保持显示存档点 B、不闪回旧 A。
+    // （推演结束由调用方先 setEvolvingUI(false) 再 refresh，翻成新结果 C。）
+    if (active) refresh(true);
     const abortBtn = document.getElementById('we-btn-abort');
     const evolveBtn = document.getElementById('we-btn-evolve');
     if (abortBtn) abortBtn.disabled = !active;
