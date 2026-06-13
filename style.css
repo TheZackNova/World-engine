@@ -2135,3 +2135,23 @@
   padding-left: 0;
   line-height: 1.68;
 }
+
+/* ===== 事件账本 section 标题 ===== */
+#we-sec-ledger > .we-section-title,
+#we-sec-cp-ledger > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: #7a9fbb;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(100, 148, 180, 0.14);
+  text-shadow: none;
+}
+#we-sec-ledger > .we-section-title .we-section-arrow,
+#we-sec-cp-ledger > .we-section-title .we-section-arrow {
+  color: #7a9fbb;
+  opacity: 0.38;
+  font-size: 8px;
+}

@@ -321,7 +321,7 @@ window.WORLD_ENGINE_UI = (function() {
     if (viewKey === 'situation') {
       content = renderSection('天下大势', 'trends', renderWorldTrends(s.worldTrends, scope))
         + renderSection('区域事件', 'regional', renderRegionalIncident(s.regionalIncident))
-        + renderSection('近期重大事件账本', 'ledger', renderLedger(s.memories));
+        + renderSection('事件账本', 'ledger', renderLedger(s.memories));
     } else if (viewKey === 'events') {
       content = renderSection('事件链', 'events', renderEventList(s.events, scope))
         + renderSection('风声', 'winds', renderWindList(s.winds))
@@ -364,7 +364,7 @@ window.WORLD_ENGINE_UI = (function() {
       + renderSection('影响链', 'cp-influence', renderInfluenceChain(s.influenceChain))
       + renderSection('区域事件', 'cp-regional', renderRegionalIncident(s.regionalIncident))
       + renderSection('秘密', 'cp-blackbox', renderBlackbox(s.blackbox))
-      + renderSection('近期重大事件账本', 'cp-ledger', renderLedger(s.memories));
+      + renderSection('事件账本', 'cp-ledger', renderLedger(s.memories));
   }
 
   /** 世界核心：环形稳定度仪表 + 四格关键计数 */
