@@ -277,7 +277,7 @@ window.WORLD_ENGINE_UI = (function() {
   };
 
   function renderSection(title, id, content) {
-    return '<div class="we-section"><div class="we-section-title">' + sectionHeader(title, id) + '</div>' + sectionBody(id, content) + '</div>';
+    return '<div class="we-section" id="we-sec-' + id + '"><div class="we-section-title">' + sectionHeader(title, id) + '</div>' + sectionBody(id, content) + '</div>';
   }
 
   function renderHomeView(s, layer, scope) {
@@ -1961,11 +1961,13 @@ window.WORLD_ENGINE_UI = (function() {
         try {
           const entries = await worldbook.loadCurrentEntries();
           const currentChatId = worldbook.getChatId ? worldbook.getChatId() : (window.WORLD_ENGINE_CORE?.getChatId?.() || 'default');
+          // 用 hasSelection() 区分"从未保存"与"保存了空数组"，避免刷新后误触发自动全选
+          const isFirstVisit = worldbook.hasSelection ? !worldbook.hasSelection() : false;
           const savedIds = worldbook.getSelectedIds();
           _wbCachedEntries = entries;
           _wbCachedChatId = currentChatId;
-          // 首次进入该聊天（无历史保存记录）则自动全选启用条目
-          if (!savedIds.length && entries.length) {
+          // 首次进入该聊天（存储中无记录）则自动全选启用条目
+          if (isFirstVisit && entries.length) {
             const allIds = entries.filter(e => !e.disabled).map(e => e.id);
             worldbook.saveSelectedIds(allIds);
             _wbCachedSelectedIds = new Set(allIds);
@@ -1974,7 +1976,9 @@ window.WORLD_ENGINE_UI = (function() {
             const enabledIds = new Set(entries.filter(e => !e.disabled).map(e => e.id));
             const validSavedIds = savedIds.filter(id => enabledIds.has(id));
             _wbCachedSelectedIds = new Set(validSavedIds);
-            if (validSavedIds.length !== savedIds.length) {
+            // 仅在有匹配条目时才回写，防止刷新后 entry.world 尚未加载导致 ID 全部不匹配、
+            // 误将保存记录清空为 []（清空后下次开面板会误触发自动全选）
+            if (validSavedIds.length > 0 && validSavedIds.length !== savedIds.length) {
               worldbook.saveSelectedIds(validSavedIds);
             }
           }

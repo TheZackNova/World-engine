@@ -1941,3 +1941,50 @@
 .we-nav-row--selected .we-nav-arrow {
   color: var(--we-tier-color, var(--we-accent));
 }
+
+/* ===== 天下大势：题额 · 沉碑 重制 ===== */
+
+/* 题额 — 匾额感：大字、金色、宋体、宽间距，下压一道细金线 */
+#we-sec-trends > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--we-gold);
+  text-shadow: 0 1px 10px rgba(208,170,88,0.24), 0 0 24px rgba(208,170,88,0.1);
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(208,170,88,0.22);
+}
+#we-sec-trends > .we-section-title .we-section-arrow {
+  color: var(--we-gold);
+  opacity: 0.5;
+  font-size: 8px;
+}
+
+/* 沉碑 — 去左色条；顶端金丝（::before）保留为碑顶横界；背景自上而下透气 */
+#we-sec-trends .we-trend-item {
+  border-left: none !important;
+  border-top: none;
+  padding: 9px 13px 10px 13px;
+  margin-bottom: 3px;
+  background: linear-gradient(180deg, rgba(201,164,92,0.09) 0%, rgba(201,164,92,0.02) 45%, transparent 80%);
+  border-radius: 3px;
+}
+/* ::before 顶端金丝加强，线宽不变，亮度提升 */
+#we-sec-trends .we-trend-item::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(208,170,88,0.55) 30%, rgba(208,170,88,0.72) 50%, rgba(208,170,88,0.55) 70%, transparent 100%);
+}
+/* 已结束的大势：金气尽褪 */
+#we-sec-trends .we-trend-ended {
+  background: rgba(0,0,0,0.12);
+}
+#we-sec-trends .we-trend-ended::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+}
+/* 名称改用宋体，增加气势感 */
+#we-sec-trends .we-trend-name {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
