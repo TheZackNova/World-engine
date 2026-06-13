@@ -145,8 +145,133 @@ window.WORLD_ENGINE_UI = (function() {
     bindEvents(state);
   }
 
+  /**
+   * 世界稳定度（纯 UI 现算，只读，不写存档/不进 prompt/不返 API）
+   * 稳定度 = clamp(100 - 世界压力, 0, 100)
+   */
+  function computeWorldStability(state) {
+    state = state || {};
+    const round = Number(state.round) || 0;
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    // 事件链：仅 Lv3/4，单条封顶 60
+    const CONFLICT_BASE = { 萌芽:0, 发酵:1, 逼近:2, 已爆发:4, 已消散:0 };
+    const PROGRESS_BASE = { 筹备:0, 执行:1, 关键:2, 已完成:-2, 已失败:0 };
+    let eventP = 0;
+    for (const e of (state.events || [])) {
+      const level = Number(e.level) || 1;
+      if (level < 3) continue;
+      const isProgress = e.type === 'progress';
+      const base = isProgress ? PROGRESS_BASE : CONFLICT_BASE;
+      const keepTotal = 2 + level * 2;
+      const remainFactor = () => {
+        if (e._terminalSince === undefined) return 1;
+        return clamp((keepTotal - (round - e._terminalSince)) / keepTotal, 0, 1);
+      };
+      let p;
+      if (e.stage === '已爆发') p = 4 * level * 0.5 * remainFactor();
+      else if (e.stage === '已完成') p = -2 * remainFactor();        // 不乘 level
+      else if (e.stage === '已消散' || e.stage === '已失败') p = 0;
+      else p = (base[e.stage] || 0) * level * 0.5;
+      if (e.stall) p *= 0.65;
+      eventP += clamp(p, -60, 60);
+    }
+
+    // 风声：仅 Lv3/4，总封顶 25
+    const WIND_BASE = { rumor:0.5, announcement:1, report:1.5, sentiment:2 };
+    let windP = 0;
+    for (const w of (state.winds || [])) {
+      const level = Number(w.level) || 1;
+      if (level < 3) continue;
+      windP += (WIND_BASE[w.type] || 0) * level;
+    }
+    windP = Math.min(windP, 25);
+
+    // 天下大势：每条持续中 +6，总封顶 20
+    let trendP = 0;
+    for (const t of (state.worldTrends || [])) if (t.status !== '已结束') trendP += 6;
+    trendP = Math.min(trendP, 20);
+
+    // 势力：关系值 × 状态系数，总封顶 35
+    const REL = { 血盟:-1.5, 盟友:-1, 友好:-0.5, 中立:0, 冷淡:0.5, 敌对:1, 世仇:1.5 };
+    const STAT = { 鼎盛:1.25, 稳固:1, 倾轧:0.75, 困顿:0.5, 衰落:0.25, 瓦解:0 };
+    let factionP = 0;
+    for (const f of (state.factions || [])) {
+      const rel = REL[f.relation] !== undefined ? REL[f.relation] : 0;
+      const st = STAT[f.status] !== undefined ? STAT[f.status] : 1;
+      factionP += rel * st;
+    }
+    factionP = clamp(factionP, -35, 35);
+
+    // 经济：只看 climate
+    const CLIMATE = { 繁荣:-2, 平稳:0, 衰退:1, 动荡:2 };
+    const econP = CLIMATE[(state.economy || {}).climate] || 0;
+
+    // 区域突发：激活 +10
+    const regionP = (state.regionalIncident && state.regionalIncident.active) ? 10 : 0;
+
+    // 仇敌：未终结，血仇+2 / 恩怨+1，总封顶 16
+    let enemyP = 0;
+    for (const en of (state.enemies || [])) {
+      if (en.status === '已终结') continue;
+      enemyP += (en.type === 'blood') ? 2 : 1;
+    }
+    enemyP = Math.min(enemyP, 16);
+
+    // 黑盒：每条「暴露」+0.5，总封顶 12
+    let bbP = 0;
+    const bb = state.blackbox || {};
+    for (const a of [].concat(bb.secretActions || [], bb.secretAssets || []))
+      if (a && a.status === '暴露') bbP += 0.5;
+    bbP = Math.min(bbP, 12);
+
+    const pressure = eventP + windP + trendP + factionP + econP + regionP + enemyP + bbP;
+    const stability = clamp(Math.round(100 - pressure), 0, 100);
+    const tier =
+      stability >= 90 ? '天下太平' :
+      stability >= 70 ? '暗流浮动' :
+      stability >= 45 ? '局势紧张' :
+      stability >= 20 ? '动荡失序' : '崩坏边缘';
+
+    const r1 = v => Math.round(v * 10) / 10;
+    return {
+      stability, tier, pressure: r1(pressure),
+      breakdown: {
+        事件: r1(eventP), 风声: r1(windP), 大势: r1(trendP), 势力: r1(factionP),
+        经济: r1(econP), 区域: r1(regionP), 仇敌: r1(enemyP), 黑盒: r1(bbP)
+      }
+    };
+  }
+
+  const STABILITY_TIER_COLOR = {
+    天下太平: '#69b68e', 暗流浮动: '#58b8a9', 局势紧张: '#d0aa58',
+    动荡失序: '#d98a3d', 崩坏边缘: '#d66f68'
+  };
+
   /** 渲染单个状态的概览区块 */
   function renderStatusBlock(s, layer) {
+    const stab = computeWorldStability(s);
+    const stabColor = STABILITY_TIER_COLOR[stab.tier] || '#58b8a9';
+    const stabDetail = Object.entries(stab.breakdown)
+      .filter(([, v]) => v !== 0)
+      .map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${v}`).join('　') || '无压力来源';
+    const stabilityHtml = `
+      <div class="we-section">
+        <div class="we-section-title">🌐 世界稳定度</div>
+        <div class="we-stability">
+          <div class="we-stability-head">
+            <span class="we-stability-val" style="color:${stabColor};">${stab.stability}</span>
+            <span class="we-stability-tier" style="color:${stabColor};">${stab.tier}</span>
+            <span class="we-stability-pressure">压力 ${stab.pressure}</span>
+          </div>
+          <div class="we-stability-bar"><div style="width:${stab.stability}%;background:${stabColor};"></div></div>
+          <div class="we-stability-detail" title="各来源压力（仅 Lv3/4 计入）">${stabDetail}</div>
+        </div>
+      </div>`;
+    return stabilityHtml + renderStatusBlockBody(s, layer);
+  }
+
+  function renderStatusBlockBody(s, layer) {
     return `
       <div class="we-section">
         <div class="we-section-title">📊 基本信息 <span class="we-badge" style="background:#6662;color:var(--we-text2);font-size:11px;">第${layer}层</span></div>

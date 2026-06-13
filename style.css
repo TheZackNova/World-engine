@@ -413,6 +413,31 @@
 .we-label { font-size: 11px; color: var(--we-text3); }
 .we-val { font-size: 15px; font-weight: 700; color: var(--we-text); }
 
+/* ===== 世界稳定度 ===== */
+.we-stability { display: flex; flex-direction: column; gap: 7px; }
+.we-stability-head { display: flex; align-items: baseline; gap: 10px; }
+.we-stability-val { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: 1px; }
+.we-stability-tier { font-size: 14px; font-weight: 700; letter-spacing: 2px; }
+.we-stability-pressure { margin-left: auto; font-size: 11px; color: var(--we-text3); }
+.we-stability-bar {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+.we-stability-bar > div {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s, background 0.4s;
+  box-shadow: 0 0 8px -1px currentColor;
+}
+.we-stability-detail {
+  font-size: 11px;
+  color: var(--we-text3);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
 /* ===== 摘要 ===== */
 .we-digest {
   background: var(--we-bg);
