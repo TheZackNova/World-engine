@@ -232,7 +232,7 @@ window.WORLD_ENGINE_UI = (function() {
 
   const STABILITY_TIER_COLOR = {
     天下太平: '#69b68e', 暗流浮动: '#58b8a9', 局势紧张: '#d0aa58',
-    动荡失序: '#d98a3d', 崩坏边缘: '#d66f68'
+    动荡失序: '#d98a3d', 崩坏边缘: '#ff0000'
   };
 
   /** 渲染单个状态的概览区块 */
@@ -254,6 +254,45 @@ window.WORLD_ENGINE_UI = (function() {
     const theta = (pct * 360 - 90) * Math.PI / 180;       // 从正上方起、顺时针
     const dotX = (80 + R * Math.cos(theta)).toFixed(1);
     const dotY = (80 + R * Math.sin(theta)).toFixed(1);
+    const dashNum = Number(dash);
+
+    function arcPoint(angleDeg) {
+      const rad = angleDeg * Math.PI / 180;
+      return {
+        x: 80 + R * Math.cos(rad),
+        y: 80 + R * Math.sin(rad)
+      };
+    }
+
+    function arcPath(startDeg, endDeg) {
+      const a = arcPoint(startDeg);
+      const b = arcPoint(endDeg);
+      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+      return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${largeArc} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+    }
+
+    const tailDeg = Math.min(36, pct * 360);
+    const tailSegs = 36;
+    let tailGlow = '';
+
+    for (let i = 0; i < tailSegs; i++) {
+      const t1 = i / tailSegs;
+      const t2 = (i + 1) / tailSegs;
+
+      const startDeg = -90 + pct * 360 - tailDeg + t1 * tailDeg;
+      const endDeg = -90 + pct * 360 - tailDeg + t2 * tailDeg;
+
+      const alpha = Math.pow(t2, 2.2) * 0.72;
+
+      tailGlow += `
+        <path d="${arcPath(startDeg, endDeg)}"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="6"
+          stroke-linecap="butt"
+          opacity="${alpha.toFixed(3)}"/>
+      `;
+    }
 
     const stats = [
       ['事件', (s.events || []).length],
@@ -268,16 +307,23 @@ window.WORLD_ENGINE_UI = (function() {
           <div class="we-core-ring">
             <svg viewBox="0 0 160 160" width="160" height="160">
               <defs>
-                <linearGradient id="weCoreGrad" x1="0" y1="1" x2="1" y2="0">
-                  <stop offset="0" stop-color="#58b8a9"/>
-                  <stop offset="1" stop-color="${tierColor}"/>
-                </linearGradient>
+                <filter id="weCoreDotGlow" x="-80%" y="-80%" width="260%" height="260%">
+                  <feGaussianBlur stdDeviation="3.2"/>
+                </filter>
               </defs>
+
               <circle cx="80" cy="80" r="${R}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"/>
-              <circle cx="80" cy="80" r="${R}" fill="none" stroke="url(#weCoreGrad)" stroke-width="6"
-                stroke-linecap="round" stroke-dasharray="${dash} ${(C - pct * C).toFixed(1)}"
+
+              <circle cx="80" cy="80" r="${R}" fill="none" stroke="${tierColor}" stroke-width="6"
+                stroke-linecap="round"
+                stroke-dasharray="${dash} ${(C - pct * C).toFixed(1)}"
                 transform="rotate(-90 80 80)"/>
-              <circle cx="${dotX}" cy="${dotY}" r="4.5" fill="${tierColor}"/>
+
+              ${tailGlow}
+
+              <circle cx="${dotX}" cy="${dotY}" r="8" fill="#ffffff" opacity="0.14" filter="url(#weCoreDotGlow)"/>
+              <circle cx="${dotX}" cy="${dotY}" r="4.6" fill="#e8fffb" opacity="0.70"/>
+              <circle cx="${dotX}" cy="${dotY}" r="2.5" fill="#ffffff" opacity="0.95"/>
             </svg>
             <div class="we-core-center">
               <div class="we-core-title">世界核心</div>

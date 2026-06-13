@@ -309,10 +309,6 @@
   text-align: center;
 }
 
-.we-section-body {
-  /* collapsed via JS */
-}
-
 /* ===== 天下大势操作按钮区域 ===== */
 .we-trend-item .we-event-actions {
   position: absolute;
@@ -445,10 +441,11 @@
 }
 .we-core-title {
   font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
-  font-size: 15px;
-  font-weight: 400;
-  letter-spacing: 4px;
-  color: var(--we-gold);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #f3d697;
+  transform: translateY(4px);
 }
 
 .we-core-sub {
@@ -456,7 +453,7 @@
   font-size: 12px;
   font-weight: 400;
   color: var(--we-text3);
-  letter-spacing: 2px;
+  letter-spacing: 0px;
   margin-top: 4px;
 }
 
