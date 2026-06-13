@@ -1,11 +1,12 @@
 /* 世界引擎 — 完整 UI 面板样式 */
 :root {
-  --we-bg: #0d1820;
+  --we-bg: #182028;
   --we-bg2: #13232c;
   --we-bg-hl: #24414a;
-  --we-card: #162630;
+  --we-card: #19212a;
   --we-surface: #1d333d;
-  --we-border: #2d4c55;
+  --we-border: rgba(208,170,88,0.28);
+  --we-beige: #e3d6b8;
   --we-text: #e5f0ed;
   --we-text2: #a7bbb7;
   --we-text3: #6e8b88;
@@ -153,11 +154,10 @@
   width: min(420px, calc(100vw - 24px));
   height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   max-height: 900px;
-  background: rgba(9,20,27,0.97);
-  backdrop-filter: blur(10px);
+  background: #182028;
   color: var(--we-text);
   border-radius: 14px;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.68), 0 0 0 1px rgba(88,184,169,0.06);
+  box-shadow: 0 10px 36px rgba(0,0,0,0.68), 0 0 0 1px rgba(208,170,88,0.10);
   border: 1px solid var(--we-border);
   display: none;
   flex-direction: column;
@@ -167,16 +167,37 @@
   line-height: 1.6;
 }
 
-/* ===== 头部 ===== */
+/* ===== 头部（融入背景，无分隔栏） ===== */
 .we-panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  background: var(--we-card);
-  border-bottom: 1px solid var(--we-border);
+  align-items: flex-start;
+  padding: 14px 16px 10px;
+  background: transparent;
   flex-shrink: 0;
   user-select: none;
+}
+.we-header-info { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.we-header-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.we-header-round {
+  font-family: "Songti SC", "SimSun", "STSong", serif;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: var(--we-gold);
+}
+.we-header-mood { display: flex; align-items: center; gap: 7px; }
+.we-header-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--we-accent);
+  flex-shrink: 0;
+}
+.we-header-mood-text {
+  font-family: "Songti SC", "SimSun", "STSong", serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--we-text2);
 }
 
 /* ===== 状态条（始终可见） ===== */
@@ -194,9 +215,12 @@
 }
 
 .we-panel-title {
+  font-family: "Songti SC", "SimSun", "STSong", serif;
   font-weight: 700;
-  color: var(--we-accent);
-  font-size: 14px;
+  color: var(--we-beige);
+  font-size: 25px;
+  letter-spacing: 2px;
+  line-height: 1.1;
 }
 
 .we-panel-header-actions {

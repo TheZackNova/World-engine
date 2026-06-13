@@ -68,7 +68,16 @@ window.WORLD_ENGINE_UI = (function() {
     panel.id = 'we-panel';
     panel.innerHTML = `
       <div class="we-panel-header">
-        <span class="we-panel-title">🌍 世界引擎</span>
+        <div class="we-header-info">
+          <div class="we-header-top">
+            <span class="we-panel-title">世界引擎</span>
+            <span class="we-header-round" id="we-header-round"></span>
+          </div>
+          <div class="we-header-mood" id="we-header-mood">
+            <span class="we-header-dot"></span>
+            <span class="we-header-mood-text"></span>
+          </div>
+        </div>
         <button class="we-panel-close">✕</button>
       </div>
       <div class="we-panel-body" id="we-panel-body">
@@ -88,6 +97,22 @@ window.WORLD_ENGINE_UI = (function() {
 
   let _activeTab = 'current';
 
+  /**
+   * 计算此刻实际注入正文的那一份世界状态（与 world-engine.js
+   * applyInjectionForCurrentRound 用同一条楼层判断）：
+   *   对话层数 < 当前状态层数 且有存档点 → 注入/显示存档点（重 roll 回退）
+   *   否则 → 注入/显示当前状态
+   * 返回的 scope 同时决定编辑写回哪个存储桶。
+   */
+  function getActiveInjected(state, checkpoint) {
+    const chatLayer = core.getChatLayer();
+    const stateLayer = Number.isFinite(Number(state.chatLayer)) ? Number(state.chatLayer) : chatLayer;
+    if (chatLayer < stateLayer && checkpoint) {
+      return { state: checkpoint, scope: 'checkpoint', layer: getCheckpointLayer(checkpoint) };
+    }
+    return { state: state, scope: 'state', layer: state.chatLayer || getChatLayer() };
+  }
+
   function refresh(auto) {
     if (!panelElement || !panelVisible) return;
     // 后台自动刷新（30s 定时、推演完成）时，若正停留在设置页则跳过：
@@ -102,6 +127,9 @@ window.WORLD_ENGINE_UI = (function() {
 
     const curLayer = state.chatLayer || getChatLayer();
     const cpLayer = getCheckpointLayer(checkpoint);
+
+    // 「当前状态」= 此刻实际注入正文的那一份（与 applyInjectionForCurrentRound 同一楼层判断）
+    const active = getActiveInjected(state, checkpoint);
 
     // 保存世界书列表滚动位置，渲染后恢复
     const _wbListEl = document.getElementById('we-worldbook-list');
@@ -119,7 +147,7 @@ window.WORLD_ENGINE_UI = (function() {
           <button class="we-btn we-btn-danger" id="we-btn-abort" style="background:var(--we-danger);color:#fff;" disabled>⏹ 停止推演</button>
           <button class="we-btn" id="we-btn-refresh">🔄 刷新</button>
         </div>
-        ${renderFullState(state, curLayer, 'state')}
+        ${renderFullState(active.state, active.layer, active.scope)}
       </div>
       <div class="we-tab-content" id="we-tab-checkpoint" style="${_activeTab === 'checkpoint' ? 'display:block' : 'display:none'}">
         ${checkpoint ? renderFullState(checkpoint, cpLayer, 'checkpoint') : '<div class="we-empty">暂无存档点</div>'}
@@ -142,6 +170,7 @@ window.WORLD_ENGINE_UI = (function() {
       };
     });
 
+    updatePanelHeader(active.state);
     bindEvents(state);
   }
 
@@ -234,6 +263,28 @@ window.WORLD_ENGINE_UI = (function() {
     天下太平: '#69b68e', 暗流浮动: '#58b8a9', 局势紧张: '#d0aa58',
     动荡失序: '#d98a3d', 崩坏边缘: '#ff0000'
   };
+
+  // 稳定度档位 → 头部小字（诗句）
+  const STABILITY_TIER_MOOD = {
+    天下太平: '海静不扬波', 暗流浮动: '暗水带花流', 局势紧张: '云急风更恶',
+    动荡失序: '乾坤含疮痍', 崩坏边缘: '坤轴欹将折'
+  };
+
+  /** 刷新头部的「第X轮 + 稳定度小字」 */
+  function updatePanelHeader(state) {
+    const roundEl = document.getElementById('we-header-round');
+    if (roundEl) roundEl.textContent = '第 ' + ((state && state.round) || 0) + ' 轮';
+    const moodEl = document.getElementById('we-header-mood');
+    if (moodEl) {
+      const stab = computeWorldStability(state || {});
+      const color = STABILITY_TIER_COLOR[stab.tier] || '#58b8a9';
+      const text = STABILITY_TIER_MOOD[stab.tier] || '';
+      const dot = moodEl.querySelector('.we-header-dot');
+      const txt = moodEl.querySelector('.we-header-mood-text');
+      if (dot) { dot.style.background = color; dot.style.boxShadow = '0 0 6px ' + color; }
+      if (txt) { txt.textContent = text; txt.style.color = color; }
+    }
+  }
 
   /** 渲染单个状态的概览区块 */
   function renderStatusBlock(s, layer) {
@@ -339,18 +390,6 @@ window.WORLD_ENGINE_UI = (function() {
 
   function renderStatusBlockBody(s, layer) {
     return `
-      <div class="we-section">
-        <div class="we-section-title">📊 基本信息 <span class="we-badge" style="background:#6662;color:var(--we-text2);font-size:11px;">第${layer}层</span></div>
-        <div class="we-info-grid">
-          <div class="we-info-item"><span class="we-label">轮次</span><span class="we-val">${s.round}</span></div>
-          <div class="we-info-item"><span class="we-label">账本</span><span class="we-val">${(s.memories||[]).filter(m=>m.type==='ledger').length}轮</span></div>
-          <div class="we-info-item"><span class="we-label">事件链</span><span class="we-val">${(s.events||[]).length}个</span></div>
-          <div class="we-info-item"><span class="we-label">势力</span><span class="we-val">${(s.factions||[]).length}个</span></div>
-          <div class="we-info-item"><span class="we-label">天下大势</span><span class="we-val">${(s.worldTrends||[]).length}条</span></div>
-          <div class="we-info-item"><span class="we-label">风声</span><span class="we-val">${(s.winds||[]).length}条</span></div>
-          <div class="we-info-item"><span class="we-label">仇敌</span><span class="we-val">${(s.enemies||[]).length}个</span></div>
-        </div>
-      </div>
       <div class="we-section">
         <div class="we-section-title">📝 世界摘要</div>
         <div class="we-digest">${u(s.worldDigest)}</div>
