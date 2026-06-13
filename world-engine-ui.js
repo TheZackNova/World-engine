@@ -96,9 +96,12 @@ window.WORLD_ENGINE_UI = (function() {
   }
 
   let _activeTab = 'current';
-  // 推演进行中标志：重 roll 推演时，新结果（C）还没算出来，
-  // 面板不能闪回上一支的旧当前状态（A），要继续显示存档点基底（B）。
+  // 推演进行中标志 + 本次推演的显示基底：
+  //   'checkpoint' = 重新推演（喂存档点 B，面板显示 B）
+  //   'state'      = 向前推演（喂当前状态 A，面板显示 A）
+  // 推演期间新结果还没写回，靠这俩决定面板显示哪份，等写回再翻新。
   let _evolving = false;
+  let _evolvingScope = 'state';
 
   /**
    * 计算此刻实际注入正文的那一份世界状态（与 world-engine.js
@@ -108,10 +111,14 @@ window.WORLD_ENGINE_UI = (function() {
    * 返回的 scope 同时决定编辑写回哪个存储桶。
    */
   function getActiveInjected(state, checkpoint) {
-    // 重 roll 推演进行中：新结果 C 还没写回，当前状态仍是上一支旧值 A，
-    // 此时继续显示存档点基底 B，等推演完成 setEvolvingUI(false)+refresh 再翻成 C。
-    if (_evolving && checkpoint && core.isNewRound && !core.isNewRound()) {
-      return { state: checkpoint, scope: 'checkpoint', layer: getCheckpointLayer(checkpoint) };
+    // 推演进行中：新结果还没写回，按本次推演的基底显示——
+    //   重新推演（_evolvingScope='checkpoint'）→ 显示存档点 B；
+    //   向前推演（_evolvingScope='state'）   → 显示当前状态 A。
+    if (_evolving) {
+      if (_evolvingScope === 'checkpoint' && checkpoint) {
+        return { state: checkpoint, scope: 'checkpoint', layer: getCheckpointLayer(checkpoint) };
+      }
+      return { state: state, scope: 'state', layer: state.chatLayer || getChatLayer() };
     }
     const chatLayer = core.getChatLayer();
     const stateLayer = Number.isFinite(Number(state.chatLayer)) ? Number(state.chatLayer) : chatLayer;
@@ -151,7 +158,8 @@ window.WORLD_ENGINE_UI = (function() {
       </div>
       <div class="we-tab-content" id="we-tab-current" style="${_activeTab === 'current' ? 'display:block' : 'display:none'}">
         <div class="we-actions-bar" style="margin-bottom:8px;">
-          <button class="we-btn we-btn-primary" id="we-btn-evolve">🌀 手动推演</button>
+          <button class="we-btn we-btn-primary" id="we-btn-redo" title="把存档点喂给后台推演，重出本轮结果">♻️ 重新推演</button>
+          <button class="we-btn we-btn-primary" id="we-btn-forward" title="把当前状态喂给后台推演，向前推进一轮">⏩ 向前推演</button>
           <button class="we-btn we-btn-danger" id="we-btn-abort" style="background:var(--we-danger);color:#fff;" disabled>⏹ 停止推演</button>
           <button class="we-btn" id="we-btn-refresh">🔄 刷新</button>
         </div>
@@ -1207,8 +1215,6 @@ window.WORLD_ENGINE_UI = (function() {
   }
 
   function bindEvents(state) {
-    const evolveBtn = document.getElementById('we-btn-evolve');
-
     function loadScopedState(scope) {
       return scope === 'checkpoint' ? core.restoreCheckpoint() : core.loadState();
     }
@@ -1785,47 +1791,55 @@ window.WORLD_ENGINE_UI = (function() {
       };
     });
 
-    if (evolveBtn) {
-      const abortBtn = document.getElementById('we-btn-abort');
-
-      evolveBtn.onclick = async () => {
-        if (isEvolving) return;
-        // 后台已有推演（如自动推演）在跑：提示而非触发，避免 busy 被当成「推演失败」
-        if (evolution.isRunning?.()) {
-          if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 已有推演进行中...');
-          showToast('⏳ 已有推演进行中，请稍候');
-          return;
-        }
-        isEvolving = true;
-        setEvolvingUI(true);
-        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
-        try {
-          const ctx = SillyTavern.getContext();
-          const s = core.loadState();
-          const chat = ctx?.chat || [];
-          const lastMsg = chat[chat.length - 1];
-          const userMsg = lastMsg?.is_user ? (lastMsg.mes || '') : '';
-          const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '') : '';
-          const ok = await evolution.evolve(s, userMsg, aiMsg);
-          if (ok && window.WORLD_ENGINE_LEDGER) window.WORLD_ENGINE_LEDGER.recordChanges(s);
-          if (ok && window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
-          if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(ok ? '✅ 推演完成' : '❌ 推演失败', !ok);
-          if (ok) showToast('✅ 推演完成');
-        } catch(e) {
-          if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('❌ 推演失败: ' + e.message, true);
-          showToast('❌ ' + e.message, true);
-        }
-        isEvolving = false;
-        setEvolvingUI(false);
-        refresh();
-      };
-
-      if (abortBtn) {
-        abortBtn.onclick = () => {
-          evolution.abort();
-          showToast('已发送停止信号');
-        };
+    // 手动推演：两个按钮，显式指定基底，不看 isNewRound。
+    //   重新推演 → 喂存档点 B（mode 'redo'），面板显示存档点；
+    //   向前推演 → 喂当前状态 A（mode 'forward'），面板显示当前状态。
+    async function runManualEvolve(mode, scope) {
+      if (isEvolving) return;
+      // 后台已有推演（如自动推演）在跑：提示而非触发，避免 busy 被当成「推演失败」
+      if (evolution.isRunning?.()) {
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 已有推演进行中...');
+        showToast('⏳ 已有推演进行中，请稍候');
+        return;
       }
+      isEvolving = true;
+      setEvolvingUI(true, scope);
+      refresh(true); // 推演开始：立刻按基底翻面（重新推演→存档点 B / 向前推演→当前状态 A），等出新结果再翻
+      if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
+      try {
+        const ctx = SillyTavern.getContext();
+        const s = core.loadState();
+        const chat = ctx?.chat || [];
+        const lastMsg = chat[chat.length - 1];
+        const userMsg = lastMsg?.is_user ? (lastMsg.mes || '') : '';
+        const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '') : '';
+        const ok = await evolution.evolve(s, userMsg, aiMsg, { mode });
+        if (ok && window.WORLD_ENGINE_LEDGER) window.WORLD_ENGINE_LEDGER.recordChanges(s);
+        if (ok && window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(ok ? '✅ 推演完成' : '❌ 推演失败', !ok);
+        if (ok) showToast('✅ 推演完成');
+      } catch(e) {
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('❌ 推演失败: ' + e.message, true);
+        showToast('❌ ' + e.message, true);
+      }
+      isEvolving = false;
+      setEvolvingUI(false);
+      refresh();
+    }
+
+    const redoBtn = document.getElementById('we-btn-redo');
+    const forwardBtn = document.getElementById('we-btn-forward');
+    if (redoBtn) redoBtn.onclick = () => runManualEvolve('redo', 'checkpoint');
+    if (forwardBtn) forwardBtn.onclick = () => runManualEvolve('forward', 'state');
+
+    const abortBtn = document.getElementById('we-btn-abort');
+    if (abortBtn) {
+      abortBtn.onclick = () => {
+        evolution.abort();
+        showToast('已发送停止信号');
+      };
+    }
+    if (redoBtn || forwardBtn) {
       setEvolvingUI(isEvolving || Boolean(evolution.isRunning?.()));
     }
 
@@ -2393,18 +2407,18 @@ window.WORLD_ENGINE_UI = (function() {
   });
 
   // ========== 推演 UI 状态切换 ==========
-  function setEvolvingUI(active) {
+  function setEvolvingUI(active, scope) {
     // 只置标志，绝不在这里调 refresh()：bindEvents() 每次刷新都会调用本函数，
     // 一旦回头再 refresh 就会 setEvolvingUI→refresh→bindEvents→setEvolvingUI 无限递归卡死。
-    // 显示 B 由 getActiveInjected 守卫负责，推演期间的任何一次 refresh 都会显示存档点。
+    // 显示哪份由 getActiveInjected 守卫 + _evolvingScope 负责，刷新由调用方在外面做。
     _evolving = !!active;
+    if (active && scope) _evolvingScope = scope;
     const abortBtn = document.getElementById('we-btn-abort');
-    const evolveBtn = document.getElementById('we-btn-evolve');
     if (abortBtn) abortBtn.disabled = !active;
-    if (evolveBtn) {
-      evolveBtn.disabled = active;
-      evolveBtn.textContent = active ? '⏳ 推演中...' : '🌀 手动推演';
-    }
+    ['we-btn-redo', 'we-btn-forward'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = active;
+    });
     const ball = document.getElementById('we-input-btn');
     if (ball && active) {
       ball.classList.add('we-ball-evolving');

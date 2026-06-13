@@ -272,7 +272,9 @@
           const state = core.loadState();
           const isNewRound = core.isNewRound();
           if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('⏳ 推演中...');
-          if (ui && ui.setEvolvingUI) ui.setEvolvingUI(true);
+          // 自动推演的显示基底跟随 isNewRound：新轮次→当前状态，重 roll→存档点
+          if (ui && ui.setEvolvingUI) ui.setEvolvingUI(true, isNewRound ? 'state' : 'checkpoint');
+          if (ui && ui.refresh) ui.refresh(true); // 推演开始：立刻按基底翻面，等出新结果再翻
 
           const success = await evolution.evolve(state, '', aiMsg);
           if (success) {

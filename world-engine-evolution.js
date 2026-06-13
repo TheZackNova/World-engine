@@ -648,7 +648,7 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
   let _abortController = null;
   let _isRunning = false;
 
-  async function evolve(state, userMsg, aiMsg) {
+  async function evolve(state, userMsg, aiMsg, opts) {
     if (_isRunning) {
       console.warn('[世界引擎] ⚠️ 已有推演正在进行，跳过重复请求');
       return false;
@@ -656,7 +656,14 @@ ${extraInstruction ? '\n' + extraInstruction : ''}`;
 
     delete state._terminalEventsThisRound;
     const backup = JSON.parse(JSON.stringify(state));
-    const isNew = core.isNewRound();
+    // 基底由调用方显式指定（手动双按钮）：
+    //   'forward' = 向前推演，从当前状态推、推完存档点前移（等同新轮次）；
+    //   'redo'    = 重新推演，从存档点恢复再推、轮次不变；
+    //   不传      = 自动推演，沿用 isNewRound() 判断。
+    const mode = opts && opts.mode;
+    const isNew = mode === 'forward' ? true
+                : mode === 'redo'    ? false
+                : core.isNewRound();
 
     if (isNew) {
       console.log('[世界引擎] 📌 新轮次');
