@@ -180,13 +180,17 @@
           if (checkpoint) {
             console.log(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} < 当前状态层数 ${stateLayer}，注入存档点`);
             applyInjection(checkpoint);
-            return;
+          } else {
+            console.warn(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} < 当前状态层数 ${stateLayer}，但无存档点，回退到当前状态`);
+            applyInjection();
           }
-          console.warn(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} < 当前状态层数 ${stateLayer}，但无存档点，回退到当前状态`);
         } else {
           console.log(`[世界引擎] 正文注入判定：对话层数 ${chatLayer} >= 当前状态层数 ${stateLayer}，注入当前状态`);
+          applyInjection();
         }
-        applyInjection();
+        // 注入正文后刷新面板，让「当前状态」跟随实际注入的那份：
+        // 重 roll（对话层数 < 状态层数）→ 显示存档点；否则 → 显示当前状态。
+        if (ui && ui.refresh) ui.refresh(true);
       }
 
       // ========== 收到完整回复后：世界推演 + 记录账本 ==========
