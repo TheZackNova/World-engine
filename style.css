@@ -1632,8 +1632,9 @@
 .we-wind-announcement > .we-event-actions { position: relative; z-index: 1; }
 .we-wind-announcement > .we-event-actions { position: absolute; }
 
-/* 公告 Lv3：中央朱印脉冲 */
+/* 公告 Lv3：中央朱印脉冲，标题转朱红 */
 .we-wind-announcement.we-wind-lv3 { border-top-color: color-mix(in srgb, var(--wind-accent) 55%, transparent); }
+.we-wind-announcement.we-wind-lv3 .we-wind-topic { color: color-mix(in srgb, var(--wind-accent) 78%, var(--we-text)); }
 .we-wind-announcement.we-wind-lv3::after {
   content: "公告";
   position: absolute; top: 50%; left: 50%;
