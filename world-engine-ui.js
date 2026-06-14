@@ -888,6 +888,8 @@ window.WORLD_ENGINE_UI = (function() {
       html += renderPagedList(econ.signals, 'economy-signals', (s, i) =>
         '<div class="we-signal-item">' +
         '<span class="we-signal-del" data-sigidx="' + i + '">✕</span>' +
+        '<span class="we-signal-copy" data-sigidx="' + i + '" title="复制信号"><i class="fa-solid fa-copy"></i></span>' +
+        '<span class="we-signal-edit" data-sigidx="' + i + '" title="编辑信号"><i class="fa-solid fa-pen"></i></span>' +
         '<span class="we-signal-summary">' + u(s.summary||s) + '</span>' +
         '<span class="we-signal-scope">' + u(s.scope||'?') + '</span>' +
         '</div>'
@@ -1073,7 +1075,6 @@ window.WORLD_ENGINE_UI = (function() {
           <div class="we-event-actions">
             <button class="we-icon-btn we-bba-delete" data-bba-index="${actIndex}" title="删除隐秘行为"><i class="fa-solid fa-trash-can"></i></button>
             <button class="we-icon-btn we-bba-copy" data-bba-index="${actIndex}" title="复制隐秘行为"><i class="fa-solid fa-copy"></i></button>
-            <button class="we-icon-btn we-bba-switch" data-bba-index="${actIndex}" title="转为隐秘资产"><i class="fa-solid fa-right-left"></i></button>
             <button class="we-icon-btn we-bba-edit" data-bba-index="${actIndex}" title="编辑隐秘行为"><i class="fa-solid fa-pen"></i></button>
           </div>`;
         const editHtml = isEditing ? renderBBActionEditor(a, actIndex) : '';
@@ -1094,7 +1095,6 @@ window.WORLD_ENGINE_UI = (function() {
           <div class="we-event-actions">
             <button class="we-icon-btn we-bbs-delete" data-bbs-index="${astIndex}" title="删除隐秘资产"><i class="fa-solid fa-trash-can"></i></button>
             <button class="we-icon-btn we-bbs-copy" data-bbs-index="${astIndex}" title="复制隐秘资产"><i class="fa-solid fa-copy"></i></button>
-            <button class="we-icon-btn we-bbs-switch" data-bbs-index="${astIndex}" title="转为隐秘行为"><i class="fa-solid fa-right-left"></i></button>
             <button class="we-icon-btn we-bbs-edit" data-bbs-index="${astIndex}" title="编辑隐秘资产"><i class="fa-solid fa-pen"></i></button>
           </div>`;
         const editHtml = isEditing ? renderBBAssetEditor(a, astIndex) : '';
@@ -1119,6 +1119,7 @@ window.WORLD_ENGINE_UI = (function() {
         </div>
         <div class="we-event-editor-footer">
           <button class="we-btn we-btn-primary we-bba-editor-save"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
+          <button class="we-btn we-bba-editor-switch" data-bba-index="${index}" title="将此隐秘行为转为隐秘资产"><i class="fa-solid fa-right-left"></i> 转为隐秘资产</button>
         </div>
       </div>`;
   }
@@ -1136,6 +1137,7 @@ window.WORLD_ENGINE_UI = (function() {
         </div>
         <div class="we-event-editor-footer">
           <button class="we-btn we-btn-primary we-bbs-editor-save"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
+          <button class="we-btn we-bbs-editor-switch" data-bbs-index="${index}" title="将此隐秘资产转为隐秘行为"><i class="fa-solid fa-right-left"></i> 转为隐秘行为</button>
         </div>
       </div>`;
   }
@@ -1798,8 +1800,8 @@ window.WORLD_ENGINE_UI = (function() {
         refresh();
       };
     });
-    // 隐秘行为 → 隐秘资产
-    document.querySelectorAll('.we-bba-switch').forEach(button => {
+    // 隐秘行为 → 隐秘资产（编辑器内切换）
+    document.querySelectorAll('.we-bba-editor-switch').forEach(button => {
       button.onclick = () => {
         const index = Number(button.dataset.bbaIndex);
         const state = core.loadState();
@@ -1811,6 +1813,7 @@ window.WORLD_ENGINE_UI = (function() {
         if (!Array.isArray(state.blackbox.secretAssets)) state.blackbox.secretAssets = [];
         state.blackbox.secretAssets.push(asset);
         core.saveState(state);
+        editingBBAction = null;
         showToast('已转为隐秘资产');
         refresh();
       };
@@ -1869,8 +1872,8 @@ window.WORLD_ENGINE_UI = (function() {
         refresh();
       };
     });
-    // 隐秘资产 → 隐秘行为
-    document.querySelectorAll('.we-bbs-switch').forEach(button => {
+    // 隐秘资产 → 隐秘行为（编辑器内切换）
+    document.querySelectorAll('.we-bbs-editor-switch').forEach(button => {
       button.onclick = () => {
         const index = Number(button.dataset.bbsIndex);
         const state = core.loadState();
@@ -1882,6 +1885,7 @@ window.WORLD_ENGINE_UI = (function() {
         if (!Array.isArray(state.blackbox.secretActions)) state.blackbox.secretActions = [];
         state.blackbox.secretActions.push(action);
         core.saveState(state);
+        editingBBAsset = null;
         showToast('已转为隐秘行为');
         refresh();
       };
@@ -2500,6 +2504,50 @@ window.WORLD_ENGINE_UI = (function() {
           refresh();
         }
       }
+      return;
+    }
+    // 复制 signal
+    var scopy = e.target.closest('.we-signal-copy');
+    if (scopy) {
+      var idx = parseInt(scopy.getAttribute('data-sigidx'));
+      if (!isNaN(idx)) {
+        var s = window.WORLD_ENGINE_CORE.loadState();
+        if (s.economy.signals && s.economy.signals[idx] !== undefined && s.economy.signals.length < 8) {
+          var copy = JSON.parse(JSON.stringify(s.economy.signals[idx]));
+          s.economy.signals.splice(idx + 1, 0, copy);
+          window.WORLD_ENGINE_CORE.saveState(s);
+          refresh();
+        }
+      }
+      return;
+    }
+    // 编辑 signal（点击笔图标进入行内编辑）
+    var sedit = e.target.closest('.we-signal-edit');
+    if (sedit) {
+      var idx = parseInt(sedit.getAttribute('data-sigidx'));
+      if (isNaN(idx)) return;
+      var parent = sedit.closest('.we-signal-item');
+      if (!parent) return;
+      var sumEl = parent.querySelector('.we-signal-summary');
+      if (!sumEl) return;
+      sumEl.contentEditable = 'true';
+      sumEl.focus();
+      var range = document.createRange();
+      range.selectNodeContents(sumEl);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      sumEl.onblur = function() {
+        sumEl.contentEditable = 'false';
+        var s = window.WORLD_ENGINE_CORE.loadState();
+        if (s.economy.signals && s.economy.signals[idx]) {
+          s.economy.signals[idx].summary = sumEl.textContent;
+          window.WORLD_ENGINE_CORE.saveState(s);
+        }
+      };
+      sumEl.onkeydown = function(ke) {
+        if (ke.key === 'Enter') { ke.preventDefault(); sumEl.blur(); }
+      };
       return;
     }
     // 添加 signal
