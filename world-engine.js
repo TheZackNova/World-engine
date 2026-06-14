@@ -247,9 +247,9 @@
         }
         const everyX = Math.max(1, parseInt(settings.evolveEveryX) || 1);
         {
-          const L = Number(core.getChatFingerprint()) || 0;
-          let anchor = Number(core.loadFingerprint()) || 0;
-          if (!anchor) { core.saveFingerprint(String(L)); anchor = L; } // 首次固定起点
+          const L = core.getChatLayer();
+          const cp = core.restoreCheckpoint();
+          const anchor = cp ? Number(cp.chatLayer) : L;
           const c = Math.floor(Math.max(0, L - anchor) / 2);
           const doEvolve = c > 0 && c % everyX === 0;
 
