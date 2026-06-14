@@ -324,8 +324,8 @@ window.WORLD_ENGINE_UI = (function() {
         + renderSection('事件账本', 'ledger', renderLedger(s.memories));
     } else if (viewKey === 'events') {
       content = renderSection('事件链', 'events', renderEventList(s.events, scope))
-        + renderSection('风声', 'winds', renderWindList(s.winds))
-        + renderSection('影响链', 'influence', renderInfluenceChain(s.influenceChain));
+        + renderSection('风声', 'winds', renderWindList(s.winds, scope))
+        + renderSection('影响链', 'influence', renderInfluenceChain(s.influenceChain, scope));
     } else if (viewKey === 'relations') {
       content = renderSection('声誉', 'reputation', renderReputation(s.reputation))
         + renderSection('势力', 'factions', renderFactionList(s.factions))
@@ -357,11 +357,11 @@ window.WORLD_ENGINE_UI = (function() {
     return renderSection('天下大势', 'cp-trends', renderWorldTrends(s.worldTrends, 'checkpoint'))
       + renderSection('事件链', 'cp-events', renderEventList(s.events, 'checkpoint'))
       + renderSection('势力', 'cp-factions', renderFactionList(s.factions))
-      + renderSection('风声', 'cp-winds', renderWindList(s.winds))
+      + renderSection('风声', 'cp-winds', renderWindList(s.winds, 'checkpoint'))
       + renderSection('声誉', 'cp-reputation', renderReputation(s.reputation))
       + renderSection('经济', 'cp-economy', renderEconomy(s.economy))
       + renderSection('仇敌录', 'cp-enemies', renderEnemies(s.enemies))
-      + renderSection('影响链', 'cp-influence', renderInfluenceChain(s.influenceChain))
+      + renderSection('影响链', 'cp-influence', renderInfluenceChain(s.influenceChain, 'checkpoint'))
       + renderSection('区域事件', 'cp-regional', renderRegionalIncident(s.regionalIncident))
       + renderSection('秘密', 'cp-blackbox', renderBlackbox(s.blackbox))
       + renderSection('事件账本', 'cp-ledger', renderLedger(s.memories));
@@ -755,7 +755,7 @@ window.WORLD_ENGINE_UI = (function() {
       </div>`;
   }
 
-  function renderWindList(winds) {
+  function renderWindList(winds, scope) {
     if (!winds || !winds.length) return '<div class="we-empty">暂无风声</div>';
     const typeNames = { announcement:'公告', report:'消息', rumor:'流言', sentiment:'舆情' };
     const typeColors = { announcement:'#6f9fd8', report:'#57b7a8', rumor:'#d98a3d', sentiment:'#a880c4' };
@@ -763,15 +763,15 @@ window.WORLD_ENGINE_UI = (function() {
     return renderPagedList(winds, 'winds', (w, windIndex) => {
       const typeColor = typeColors[w.type] || '#888';
       const levelColor = levelColors[w.level] || '#9aa6b2';
-      const isEditing = editingWind && editingWind.index === windIndex;
+      const isEditing = editingWind && editingWind.scope === scope && editingWind.index === windIndex;
 
       const actionHtml = isEditing ? '' : `
         <div class="we-event-actions">
-          <button class="we-icon-btn we-wind-delete" data-wind-index="${windIndex}" title="删除风声"><i class="fa-solid fa-trash-can"></i></button>
-          <button class="we-icon-btn we-wind-copy" data-wind-index="${windIndex}" title="复制风声"><i class="fa-solid fa-copy"></i></button>
-          <button class="we-icon-btn we-wind-edit" data-wind-index="${windIndex}" title="编辑风声"><i class="fa-solid fa-pen"></i></button>
+          <button class="we-icon-btn we-wind-delete" data-wind-scope="${scope}" data-wind-index="${windIndex}" title="删除风声"><i class="fa-solid fa-trash-can"></i></button>
+          <button class="we-icon-btn we-wind-copy" data-wind-scope="${scope}" data-wind-index="${windIndex}" title="复制风声"><i class="fa-solid fa-copy"></i></button>
+          <button class="we-icon-btn we-wind-edit" data-wind-scope="${scope}" data-wind-index="${windIndex}" title="编辑风声"><i class="fa-solid fa-pen"></i></button>
         </div>`;
-      const editHtml = isEditing ? renderWindEditor(w, windIndex) : '';
+      const editHtml = isEditing ? renderWindEditor(w, windIndex, scope) : '';
 
       const windTypeClass = { announcement:'we-wind-announcement', report:'we-wind-report', rumor:'we-wind-rumor', sentiment:'we-wind-sentiment' }[w.type] || '';
       const windLvClass = 'we-wind-lv' + (w.level || 1);
@@ -791,14 +791,14 @@ window.WORLD_ENGINE_UI = (function() {
     });
   }
 
-  function renderWindEditor(w, index) {
+  function renderWindEditor(w, index, scope) {
     const typeOptions = [['announcement','公告'],['report','消息'],['rumor','流言'],['sentiment','舆情']].map(([v,label]) =>
       `<option value="${v}" ${w.type === v ? 'selected' : ''}>${label}</option>`).join('');
     const levelOptions = [1,2,3,4].map(l =>
       `<option value="${l}" ${w.level === l ? 'selected' : ''}>Lv.${l}</option>`).join('');
 
     return `
-      <div class="we-event-editor" data-wind-index="${index}">
+      <div class="we-event-editor" data-wind-index="${index}" data-wind-scope="${scope}">
         <button class="we-event-editor-close we-wind-editor-close"><i class="fa-solid fa-xmark"></i></button>
         <div class="we-event-editor-grid">
           <label class="we-event-editor-wide">主题<input class="we-wind-edit-topic" type="text" value="${u(w.topic||'')}"></label>
@@ -905,17 +905,17 @@ window.WORLD_ENGINE_UI = (function() {
       </div>`;
   }
 
-  function renderInfluenceChain(chain) {
+  function renderInfluenceChain(chain, scope) {
     if (!chain || !chain.length) return '<div class="we-empty">暂无影响链</div>';
     return renderPagedList(chain, 'influence', (item, infIndex) => {
-      const isEditing = editingInfluence?.index === infIndex;
+      const isEditing = editingInfluence?.scope === scope && editingInfluence?.index === infIndex;
       const actionHtml = isEditing ? '' : `
         <div class="we-event-actions">
-          <button class="we-icon-btn we-influence-delete" data-influence-index="${infIndex}" title="删除影响链"><i class="fa-solid fa-trash-can"></i></button>
-          <button class="we-icon-btn we-influence-copy" data-influence-index="${infIndex}" title="复制影响链"><i class="fa-solid fa-copy"></i></button>
-          <button class="we-icon-btn we-influence-edit" data-influence-index="${infIndex}" title="编辑影响链"><i class="fa-solid fa-pen"></i></button>
+          <button class="we-icon-btn we-influence-delete" data-influence-scope="${scope}" data-influence-index="${infIndex}" title="删除影响链"><i class="fa-solid fa-trash-can"></i></button>
+          <button class="we-icon-btn we-influence-copy" data-influence-scope="${scope}" data-influence-index="${infIndex}" title="复制影响链"><i class="fa-solid fa-copy"></i></button>
+          <button class="we-icon-btn we-influence-edit" data-influence-scope="${scope}" data-influence-index="${infIndex}" title="编辑影响链"><i class="fa-solid fa-pen"></i></button>
         </div>`;
-      const editHtml = isEditing ? renderInfluenceEditor(item, infIndex) : '';
+      const editHtml = isEditing ? renderInfluenceEditor(item, infIndex, scope) : '';
       return `<div class="we-influence-item">
         ${actionHtml}
         <div class="we-influence-step we-influence-trigger">
@@ -935,9 +935,9 @@ window.WORLD_ENGINE_UI = (function() {
     });
   }
 
-  function renderInfluenceEditor(item, index) {
+  function renderInfluenceEditor(item, index, scope) {
     return `
-      <div class="we-event-editor" data-influence-index="${index}">
+      <div class="we-event-editor" data-influence-index="${index}" data-influence-scope="${scope}">
         <button class="we-event-editor-close we-influence-editor-close"><i class="fa-solid fa-xmark"></i></button>
         <div class="we-event-editor-grid">
           <label class="we-event-editor-wide">触发源<textarea class="we-influence-edit-trigger" rows="2">${u(item.trigger||'')}</textarea></label>
@@ -1421,7 +1421,7 @@ window.WORLD_ENGINE_UI = (function() {
     // 风声编辑器事件
     document.querySelectorAll('.we-wind-edit').forEach(button => {
       button.onclick = () => {
-        editingWind = { index: Number(button.dataset.windIndex) };
+        editingWind = { scope: button.dataset.windScope, index: Number(button.dataset.windIndex) };
         refresh();
       };
     });
@@ -1431,9 +1431,10 @@ window.WORLD_ENGINE_UI = (function() {
     document.querySelectorAll('.we-wind-editor-save').forEach(button => {
       button.onclick = () => {
         const editor = button.closest('.we-event-editor');
+        const scope = editor.dataset.windScope;
         const index = Number(editor.dataset.windIndex);
-        const state = core.loadState();
-        const wind = state.winds?.[index];
+        const scopedState = loadScopedState(scope);
+        const wind = scopedState.winds?.[index];
         if (!wind) return;
         const topic = editor.querySelector('.we-wind-edit-topic').value.trim();
         if (!topic) { showToast('风声主题不能为空', true); return; }
@@ -1444,7 +1445,7 @@ window.WORLD_ENGINE_UI = (function() {
         wind.source = editor.querySelector('.we-wind-edit-source').value.trim();
         wind.content = editor.querySelector('.we-wind-edit-content').value.trim();
         wind.quietRounds = 0;
-        core.saveState(state);
+        saveScopedState(scope, scopedState);
         editingWind = null;
         showToast('风声修改已保存');
         refresh();
@@ -1452,26 +1453,28 @@ window.WORLD_ENGINE_UI = (function() {
     });
     document.querySelectorAll('.we-wind-delete').forEach(button => {
       button.onclick = () => {
+        const scope = button.dataset.windScope;
         const index = Number(button.dataset.windIndex);
-        const state = core.loadState();
-        const wind = state.winds?.[index];
+        const scopedState = loadScopedState(scope);
+        const wind = scopedState.winds?.[index];
         if (!wind || !confirm(`删除风声"${wind.topic}"？`)) return;
-        state.winds.splice(index, 1);
-        core.saveState(state);
+        scopedState.winds.splice(index, 1);
+        saveScopedState(scope, scopedState);
         showToast('风声已删除');
         refresh();
       };
     });
     document.querySelectorAll('.we-wind-copy').forEach(button => {
       button.onclick = () => {
+        const scope = button.dataset.windScope;
         const index = Number(button.dataset.windIndex);
-        const state = core.loadState();
-        const wind = state.winds?.[index];
+        const scopedState = loadScopedState(scope);
+        const wind = scopedState.winds?.[index];
         if (!wind) return;
         const copy = JSON.parse(JSON.stringify(wind));
         copy.quietRounds = 0;
-        state.winds.push(copy);
-        core.saveState(state);
+        scopedState.winds.push(copy);
+        saveScopedState(scope, scopedState);
         showToast('风声已复制');
         refresh();
       };
@@ -1594,7 +1597,7 @@ window.WORLD_ENGINE_UI = (function() {
     // ===== 影响链编辑器事件 =====
     document.querySelectorAll('.we-influence-edit').forEach(button => {
       button.onclick = () => {
-        editingInfluence = { index: Number(button.dataset.influenceIndex) };
+        editingInfluence = { scope: button.dataset.influenceScope, index: Number(button.dataset.influenceIndex) };
         refresh();
       };
     });
@@ -1604,9 +1607,10 @@ window.WORLD_ENGINE_UI = (function() {
     document.querySelectorAll('.we-influence-editor-save').forEach(button => {
       button.onclick = () => {
         const editor = button.closest('.we-event-editor');
+        const scope = editor.dataset.influenceScope;
         const index = Number(editor.dataset.influenceIndex);
-        const state = core.loadState();
-        const inf = state.influenceChain?.[index];
+        const scopedState = loadScopedState(scope);
+        const inf = scopedState.influenceChain?.[index];
         if (!inf) return;
         const trigger = editor.querySelector('.we-influence-edit-trigger').value.trim();
         const impact = editor.querySelector('.we-influence-edit-impact').value.trim();
@@ -1614,7 +1618,7 @@ window.WORLD_ENGINE_UI = (function() {
         inf.trigger = trigger;
         inf.impact = impact;
         inf.fallout = editor.querySelector('.we-influence-edit-fallout').value.trim();
-        core.saveState(state);
+        saveScopedState(scope, scopedState);
         editingInfluence = null;
         showToast('影响链修改已保存');
         refresh();
@@ -1622,25 +1626,27 @@ window.WORLD_ENGINE_UI = (function() {
     });
     document.querySelectorAll('.we-influence-delete').forEach(button => {
       button.onclick = () => {
+        const scope = button.dataset.influenceScope;
         const index = Number(button.dataset.influenceIndex);
-        const state = core.loadState();
-        const inf = state.influenceChain?.[index];
+        const scopedState = loadScopedState(scope);
+        const inf = scopedState.influenceChain?.[index];
         if (!inf || !confirm(`删除影响链"${inf.trigger}"？`)) return;
-        state.influenceChain.splice(index, 1);
-        core.saveState(state);
+        scopedState.influenceChain.splice(index, 1);
+        saveScopedState(scope, scopedState);
         showToast('影响链已删除');
         refresh();
       };
     });
     document.querySelectorAll('.we-influence-copy').forEach(button => {
       button.onclick = () => {
+        const scope = button.dataset.influenceScope;
         const index = Number(button.dataset.influenceIndex);
-        const state = core.loadState();
-        const inf = state.influenceChain?.[index];
+        const scopedState = loadScopedState(scope);
+        const inf = scopedState.influenceChain?.[index];
         if (!inf) return;
         const copy = JSON.parse(JSON.stringify(inf));
-        state.influenceChain.push(copy);
-        core.saveState(state);
+        scopedState.influenceChain.push(copy);
+        saveScopedState(scope, scopedState);
         showToast('影响链已复制');
         refresh();
       };
