@@ -498,10 +498,10 @@ window.WORLD_ENGINE_UI = (function() {
         逼近:'#cf5f3f',
         已爆发:'#b93f3f',
         已消散:'#888888',
-        筹备:'#57b7a8',
-        执行:'#3fae86',
-        关键:'#2f9b68',
-        已完成:'#237a4d',
+        筹备:'#7de9d9',
+        执行:'#58e8b3',
+        关键:'#2a8a5d',
+        已完成:'#1b5e3b',
         已失败:'#888888',
         停滞:'#6688aa'
       };
@@ -546,12 +546,12 @@ window.WORLD_ENGINE_UI = (function() {
         const keepRounds = 2 + (e.level || 1) * 2;
         const left = keepRounds - (curRound - e._terminalSince) + 1;
         if (left >= 1) {
-          const cdColor = e.stage === '已完成' ? '#6fc28a' : '#e07465';
+          const cdColor = e.stage === '已完成' ? '#58e8b3' : '#e07465';
           countdownHtml = ` <span class="we-badge we-event-countdown" style="color:${cdColor};" title="该事件在 ${left} 轮后自动清退"><i class="fa-regular fa-clock"></i>剩余${left}轮</span>`;
         }
       }
       const terminalStamp = {
-        已完成: { text: '完成', color: '#6fc28a' },
+        已完成: { text: '完成', color: '#58e8b3' },
         已爆发: { text: '爆发', color: '#e07465' },
         已消散: { text: '消散', color: '#a6a6ad' },
         已失败: { text: '失败', color: '#c08aaa' }

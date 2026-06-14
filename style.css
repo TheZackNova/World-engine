@@ -1553,13 +1553,13 @@
 
 /* 成功（已完成）：同样来一记爆发，但是绿色的捷报上扬 */
 .we-stage-done {
-  background: radial-gradient(130% 90% at 50% 0%, rgba(111,194,138,0.26), transparent 60%), #1d3a2b;
-  border-color: color-mix(in srgb, #6fc28a 42%, var(--we-border));
+  background: radial-gradient(130% 90% at 50% 0%, rgba(88,232,179,0.24), transparent 60%), #143726;
+  border-color: color-mix(in srgb, #58e8b3 42%, var(--we-border));
   animation: we-burst-flash-up 0.9s ease-out 1, we-done-glow 3.4s ease-in-out 0.9s infinite;
 }
 @keyframes we-done-glow {
-  0%,100% { box-shadow: 0 0 0 1px rgba(35,122,77,0.5); }
-  50%     { box-shadow: 0 0 14px -3px rgba(111,194,138,0.62), 0 0 0 1px rgba(111,194,138,0.62); }
+  0%,100% { box-shadow: 0 0 0 1px rgba(27,94,59,0.55); }
+  50%     { box-shadow: 0 0 14px -3px rgba(88,232,179,0.62), 0 0 0 1px rgba(88,232,179,0.62); }
 }
 
 /* 爆发/成功 共用：入场火光（红向中性、绿向上扬） */
@@ -1570,10 +1570,10 @@
   100% { box-shadow: inset 0 0 0 0 rgba(255,150,100,0); transform: scale(1); }
 }
 @keyframes we-burst-flash-up {
-  0%   { box-shadow: inset 0 0 0 0 rgba(130,225,160,0); transform: translateY(0) scale(1); }
-  12%  { box-shadow: inset 0 0 30px 4px rgba(130,225,160,0.5), 0 0 18px -2px rgba(110,200,140,0.45); transform: translateY(-2px) scale(1.012); }
+  0%   { box-shadow: inset 0 0 0 0 rgba(88,232,179,0); transform: translateY(0) scale(1); }
+  12%  { box-shadow: inset 0 0 30px 4px rgba(88,232,179,0.5), 0 0 18px -2px rgba(88,232,179,0.45); transform: translateY(-2px) scale(1.012); }
   40%  { transform: translateY(0) scale(0.998); }
-  100% { box-shadow: inset 0 0 0 0 rgba(130,225,160,0); transform: translateY(0) scale(1); }
+  100% { box-shadow: inset 0 0 0 0 rgba(88,232,179,0); transform: translateY(0) scale(1); }
 }
 /* 终局印章：砸下定格 */
 .we-stage-erupt .we-event-stamp,
