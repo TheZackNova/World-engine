@@ -14,8 +14,10 @@ window.WORLD_ENGINE_UI = (function() {
   let editingEnemy = null;
   let editingInfluence = null;
   let editingRI = null;
-  let editingBBAction = null;
-  let editingBBAsset = null;
+  // 秘密编辑器统一态：{ scope, list:'action'|'asset', index, view:'action'|'asset' }
+  //   list  = 条目当前所在的桶；index = 在该桶里的下标
+  //   view  = 当前显示的表单类型（切下拉只改 view，不动数据；转换延到保存）
+  let editingSecret = null;
   let listPagerCounter = 0;
   const listPageState = {};
   const sectionCollapsed = { 'checkpoint-section': true };
@@ -902,8 +904,10 @@ window.WORLD_ENGINE_UI = (function() {
     const climateColors = { '繁荣': '#3ecf8e', '平稳': '#7a8a9a', '衰退': '#d9a34a', '动荡': '#e05555' };
     const climateBg = { '繁荣': 'rgba(62,207,142,0.08)', '平稳': 'rgba(122,138,154,0.06)', '衰退': 'rgba(217,163,74,0.08)', '动荡': 'rgba(224,85,85,0.08)' };
     const climate = econ.climate || '平稳';
-    let html = '<div class="we-climate-bar" style="background:' + (climateBg[climate]||'rgba(122,138,154,0.06)') + ';border-left-color:' + (climateColors[climate]||'#7a8a9a') + '">';
-    html += '<span class="we-climate-label" style="color:' + (climateColors[climate]||'#7a8a9a') + '">' + climate + '</span>';
+    const cColor = climateColors[climate] || '#7a8a9a';
+    let html = '<div class="we-climate-bar" style="background:' + (climateBg[climate]||'rgba(122,138,154,0.06)') + ';">';
+    html += '<span class="we-climate-dot" style="background:' + cColor + ';box-shadow:0 0 8px ' + cColor + '88;"></span>';
+    html += '<span class="we-climate-label" style="color:' + cColor + '">' + climate + '</span>';
     html += '<div class="we-climate-btns">';
     for (const c of climates) {
       html += '<span class="we-climate-btn' + (c === climate ? ' we-climate-btn-on' : '') + '" style="' + (c === climate ? ('color:'+(climateColors[c]||'#7a8a9a')+';border-color:'+(climateColors[c]||'#7a8a9a')) : '') + '" data-climate-scope="' + sc + '" data-climate="' + c + '">' + c + '</span>';
@@ -912,15 +916,15 @@ window.WORLD_ENGINE_UI = (function() {
     if (econ.signals?.length) {
       html += renderPagedList(econ.signals, 'economy-signals', (s, i) =>
         '<div class="we-signal-item" data-sig-scope="' + sc + '">' +
-        '<span class="we-signal-del" data-sig-scope="' + sc + '" data-sigidx="' + i + '">✕</span>' +
         '<span class="we-signal-summary">' + u(s.summary||s) + '</span>' +
         '<span class="we-signal-scope">' + u(s.scope||'?') + '</span>' +
+        '<span class="we-signal-del" data-sig-scope="' + sc + '" data-sigidx="' + i + '" title="删除信号">✕</span>' +
         '</div>'
       );
     } else {
       html += '<div class="we-empty" style="margin-top:4px;">暂无市场信号</div>';
     }
-    html += '<div class="we-signal-item we-signal-add" data-sig-scope="' + sc + '">添加信号</div>';
+    html += '<div class="we-signal-add" data-sig-scope="' + sc + '"><i class="fa-solid fa-plus"></i> 添加信号</div>';
     return html;
   }
 
@@ -1087,86 +1091,94 @@ window.WORLD_ENGINE_UI = (function() {
       </div>`;
   }
 
+  const SECRET_STATUS_COLOR = { '有效': 'var(--we-green)', '过期': 'var(--we-text3)', '暴露': 'var(--we-red)', '失效': 'var(--we-text3)' };
+
+  function isEditingSecret(scope, list, index) {
+    return editingSecret && editingSecret.scope === scope && editingSecret.list === list && editingSecret.index === index;
+  }
+
   function renderBlackbox(blackbox, scope) {
     if (!blackbox) return '<div class="we-empty">暂无黑盒信息</div>';
     let html = '';
-    if (blackbox.secretActions?.length) {
-      html += '<div class="we-accident-item" style="border-left-color:var(--we-purple);"><strong>隐秘行为:</strong></div>';
-      html += renderPagedList(blackbox.secretActions, 'secret-actions', (a, actIndex) => {
-        const isEditing = editingBBAction?.scope === scope && editingBBAction?.index === actIndex;
-        const actionHtml = isEditing ? '' : `
-          <div class="we-event-actions">
-            <button class="we-icon-btn we-bba-delete" data-bba-scope="${scope}" data-bba-index="${actIndex}" title="删除隐秘行为"><i class="fa-solid fa-trash-can"></i></button>
-            <button class="we-icon-btn we-bba-copy" data-bba-scope="${scope}" data-bba-index="${actIndex}" title="复制隐秘行为"><i class="fa-solid fa-copy"></i></button>
-            <button class="we-icon-btn we-bba-edit" data-bba-scope="${scope}" data-bba-index="${actIndex}" title="编辑隐秘行为"><i class="fa-solid fa-pen"></i></button>
-          </div>`;
-        const editHtml = isEditing ? renderBBActionEditor(a, actIndex, scope) : '';
-        return `<div class="we-accident-item we-blackbox-item" style="margin:2px 0;font-size:12px;position:relative;">
-          ${actionHtml}
-          ${u(a.action||a)} — 知情者: ${u(a.witnesses||'无')}
-          ${editHtml}
+    const actions = blackbox.secretActions || [];
+    const assets = blackbox.secretAssets || [];
+
+    if (actions.length) {
+      html += '<div class="we-secret-group-label we-secret-action">隐秘行为</div>';
+      html += renderPagedList(actions, 'secret-actions', (raw, idx) => {
+        const a = (typeof raw === 'string') ? { action: raw } : raw;
+        if (isEditingSecret(scope, 'action', idx)) return renderSecretEditor(a, 'action', idx, scope);
+        return `<div class="we-secret-card we-secret-action">
+          <div class="we-secret-ops">
+            <button class="we-icon-btn we-secret-edit" data-secret-scope="${scope}" data-secret-list="action" data-secret-index="${idx}" title="编辑"><i class="fa-solid fa-pen"></i></button>
+            <button class="we-icon-btn we-secret-copy" data-secret-scope="${scope}" data-secret-list="action" data-secret-index="${idx}" title="复制"><i class="fa-solid fa-copy"></i></button>
+            <button class="we-icon-btn we-secret-del" data-secret-scope="${scope}" data-secret-list="action" data-secret-index="${idx}" title="删除"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+          <div class="we-secret-body">
+            <div class="we-secret-title">${u(a.action || '未命名行为')}</div>
+            <div class="we-secret-meta">知情者 · ${u(a.witnesses || '无')}</div>
+          </div>
         </div>`;
       });
     }
-    if (blackbox.secretAssets?.length) {
-      html += '<div class="we-accident-item" style="border-left-color:var(--we-gold);margin-top:4px;"><strong>隐秘资产:</strong></div>';
-      html += renderPagedList(blackbox.secretAssets, 'secret-assets', (a, astIndex) => {
-        const statusColor = { '有效': 'var(--we-green)', '过期': 'var(--we-text3)', '暴露': 'var(--we-red)', '失效': 'var(--we-text3)' };
-        const sc = statusColor[a.status] || 'var(--we-text3)';
-        const isEditing = editingBBAsset?.scope === scope && editingBBAsset?.index === astIndex;
-        const actionHtml = isEditing ? '' : `
-          <div class="we-event-actions">
-            <button class="we-icon-btn we-bbs-delete" data-bbs-scope="${scope}" data-bbs-index="${astIndex}" title="删除隐秘资产"><i class="fa-solid fa-trash-can"></i></button>
-            <button class="we-icon-btn we-bbs-copy" data-bbs-scope="${scope}" data-bbs-index="${astIndex}" title="复制隐秘资产"><i class="fa-solid fa-copy"></i></button>
-            <button class="we-icon-btn we-bbs-edit" data-bbs-scope="${scope}" data-bbs-index="${astIndex}" title="编辑隐秘资产"><i class="fa-solid fa-pen"></i></button>
-          </div>`;
-        const editHtml = isEditing ? renderBBAssetEditor(a, astIndex, scope) : '';
-        return `<div class="we-accident-item we-blackbox-item" style="margin:2px 0;font-size:12px;position:relative;">
-          ${actionHtml}
-          ${u(a.name||a)} — 暴露度: ${a.exposure||0}%, <span style="color:${sc}">${u(a.status||'有效')}</span>
-          ${editHtml}
+
+    if (assets.length) {
+      html += '<div class="we-secret-group-label we-secret-asset">隐秘资产</div>';
+      html += renderPagedList(assets, 'secret-assets', (raw, idx) => {
+        const a = (typeof raw === 'string') ? { name: raw } : raw;
+        if (isEditingSecret(scope, 'asset', idx)) return renderSecretEditor(a, 'asset', idx, scope);
+        const expo = Math.min(100, Math.max(0, Number(a.exposure) || 0));
+        const status = a.status || '有效';
+        const stColor = SECRET_STATUS_COLOR[status] || 'var(--we-text3)';
+        return `<div class="we-secret-card we-secret-asset">
+          <div class="we-secret-ops">
+            <button class="we-icon-btn we-secret-edit" data-secret-scope="${scope}" data-secret-list="asset" data-secret-index="${idx}" title="编辑"><i class="fa-solid fa-pen"></i></button>
+            <button class="we-icon-btn we-secret-copy" data-secret-scope="${scope}" data-secret-list="asset" data-secret-index="${idx}" title="复制"><i class="fa-solid fa-copy"></i></button>
+            <button class="we-icon-btn we-secret-del" data-secret-scope="${scope}" data-secret-list="asset" data-secret-index="${idx}" title="删除"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+          <div class="we-secret-body">
+            <div class="we-secret-title">${u(a.name || '未命名资产')}<span class="we-secret-status" style="color:${stColor};border-color:${stColor};">${u(status)}</span></div>
+            <div class="we-secret-expo">
+              <div class="we-secret-expo-track"><div class="we-secret-expo-fill" style="width:${expo}%;"></div></div>
+              <span class="we-secret-expo-num">暴露 ${expo}%</span>
+            </div>
+          </div>
         </div>`;
       });
     }
+
     if (!html) html = '<div class="we-empty">无暗面信息</div>';
     return html;
   }
 
-  function renderBBActionEditor(a, index, scope) {
+  /** 秘密统一编辑器：顶部「类型」下拉只切表单(view)，转换延到保存才落库 */
+  function renderSecretEditor(a, list, index, scope, view) {
+    view = view || (editingSecret && editingSecret.view) || list;
+    const typeSelect = `<label>类型<select class="we-secret-type">
+        <option value="action" ${view === 'action' ? 'selected' : ''}>隐秘行为</option>
+        <option value="asset" ${view === 'asset' ? 'selected' : ''}>隐秘资产</option>
+      </select></label>`;
+    // 跨类型预填：行为↔资产 标题字段互通（action.action ↔ asset.name）
+    const titleText = u(a.action || a.name || '');
+    let fields;
+    if (view === 'action') {
+      fields = `${typeSelect}
+        <label class="we-event-editor-wide">行为描述<textarea class="we-secret-f-action" rows="2">${titleText}</textarea></label>
+        <label class="we-event-editor-wide">目击者<input class="we-secret-f-witnesses" type="text" value="${u(a.witnesses || '无')}"></label>`;
+    } else {
+      const statusOptions = ['有效','过期','暴露','失效'].map(s =>
+        `<option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>`).join('');
+      fields = `${typeSelect}
+        <label class="we-event-editor-wide">资产名称<input class="we-secret-f-name" type="text" value="${titleText}"></label>
+        <label>暴露度<input class="we-secret-f-exposure" type="number" min="0" max="100" value="${Number(a.exposure) || 0}"></label>
+        <label>状态<select class="we-secret-f-status">${statusOptions}</select></label>`;
+    }
     return `
-      <div class="we-event-editor" data-bba-scope="${scope}" data-bba-index="${index}">
-        <button class="we-event-editor-close we-bba-editor-close"><i class="fa-solid fa-xmark"></i></button>
-        <div class="we-event-editor-grid">
-          <label>类型<select class="we-bb-type-select" data-bb-kind="action" data-bb-scope="${scope}" data-bb-index="${index}" title="切换类型即转换为隐秘资产">
-            <option value="action" selected>隐秘行为</option>
-            <option value="asset">隐秘资产</option>
-          </select></label>
-          <label class="we-event-editor-wide">行为描述<textarea class="we-bba-edit-action" rows="2">${u(a.action||'')}</textarea></label>
-          <label class="we-event-editor-wide">目击者<input class="we-bba-edit-witnesses" type="text" value="${u(a.witnesses||'无')}"></label>
-        </div>
+      <div class="we-event-editor we-secret-editor" data-secret-scope="${scope}" data-secret-list="${list}" data-secret-index="${index}" data-secret-view="${view}">
+        <button class="we-event-editor-close we-secret-editor-close"><i class="fa-solid fa-xmark"></i></button>
+        <div class="we-event-editor-grid">${fields}</div>
         <div class="we-event-editor-footer">
-          <button class="we-btn we-btn-primary we-bba-editor-save"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
-        </div>
-      </div>`;
-  }
-
-  function renderBBAssetEditor(a, index, scope) {
-    const statusOptions = ['有效','过期','暴露','失效'].map(s =>
-      `<option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>`).join('');
-    return `
-      <div class="we-event-editor" data-bbs-scope="${scope}" data-bbs-index="${index}">
-        <button class="we-event-editor-close we-bbs-editor-close"><i class="fa-solid fa-xmark"></i></button>
-        <div class="we-event-editor-grid">
-          <label>类型<select class="we-bb-type-select" data-bb-kind="asset" data-bb-scope="${scope}" data-bb-index="${index}" title="切换类型即转换为隐秘行为">
-            <option value="action">隐秘行为</option>
-            <option value="asset" selected>隐秘资产</option>
-          </select></label>
-          <label class="we-event-editor-wide">资产名称<input class="we-bbs-edit-name" type="text" value="${u(a.name||'')}"></label>
-          <label>暴露度<input class="we-bbs-edit-exposure" type="number" min="0" max="100" value="${a.exposure||0}"></label>
-          <label>状态<select class="we-bbs-edit-status">${statusOptions}</select></label>
-        </div>
-        <div class="we-event-editor-footer">
-          <button class="we-btn we-btn-primary we-bbs-editor-save"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
+          <button class="we-btn we-btn-primary we-secret-save"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
         </div>
       </div>`;
   }
@@ -1776,150 +1788,95 @@ window.WORLD_ENGINE_UI = (function() {
       };
     });
 
-    // ===== 黑盒隐秘行为编辑器事件 =====
-    document.querySelectorAll('.we-bba-edit').forEach(button => {
-      button.onclick = () => {
-        editingBBAction = { scope: button.dataset.bbaScope, index: Number(button.dataset.bbaIndex) };
-        refresh();
-      };
-    });
-    document.querySelectorAll('.we-bba-editor-close').forEach(button => {
-      button.onclick = () => { editingBBAction = null; refresh(); };
-    });
-    document.querySelectorAll('.we-bba-editor-save').forEach(button => {
-      button.onclick = () => {
-        const editor = button.closest('.we-event-editor');
-        const scope = editor.dataset.bbaScope;
-        const index = Number(editor.dataset.bbaIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretActions?.[index];
-        if (!a) return;
-        const action = editor.querySelector('.we-bba-edit-action').value.trim();
-        if (!action) { showToast('行为描述不能为空', true); return; }
-        if (typeof a === 'string') { state.blackbox.secretActions[index] = { action, witnesses: '无' }; }
-        else { a.action = action; a.witnesses = editor.querySelector('.we-bba-edit-witnesses').value.trim() || '无'; }
-        saveScopedState(scope, state);
-        editingBBAction = null;
-        showToast('隐秘行为修改已保存');
-        refresh();
-      };
-    });
-    document.querySelectorAll('.we-bba-delete').forEach(button => {
-      button.onclick = () => {
-        const scope = button.dataset.bbaScope;
-        const index = Number(button.dataset.bbaIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretActions?.[index];
-        if (!a || !confirm(`删除隐秘行为？`)) return;
-        state.blackbox.secretActions.splice(index, 1);
-        saveScopedState(scope, state);
-        showToast('隐秘行为已删除');
-        refresh();
-      };
-    });
-    document.querySelectorAll('.we-bba-copy').forEach(button => {
-      button.onclick = () => {
-        const scope = button.dataset.bbaScope;
-        const index = Number(button.dataset.bbaIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretActions?.[index];
-        if (!a) return;
-        const copy = JSON.parse(JSON.stringify(a));
-        // 插在原条目之后，避免追加到末页后因翻页器复位而“看不见”
-        state.blackbox.secretActions.splice(index + 1, 0, copy);
-        saveScopedState(scope, state);
-        showToast('隐秘行为已复制');
-        refresh();
-      };
-    });
+    // ===== 秘密（隐秘行为/资产）统一编辑器事件 =====
+    const SECRET_ARR = { action: 'secretActions', asset: 'secretAssets' };
 
-    // ===== 黑盒隐秘资产编辑器事件 =====
-    document.querySelectorAll('.we-bbs-edit').forEach(button => {
+    document.querySelectorAll('.we-secret-edit').forEach(button => {
       button.onclick = () => {
-        editingBBAsset = { scope: button.dataset.bbsScope, index: Number(button.dataset.bbsIndex) };
+        const list = button.dataset.secretList;
+        editingSecret = { scope: button.dataset.secretScope, list, index: Number(button.dataset.secretIndex), view: list };
         refresh();
       };
     });
-    document.querySelectorAll('.we-bbs-editor-close').forEach(button => {
-      button.onclick = () => { editingBBAsset = null; refresh(); };
+    document.querySelectorAll('.we-secret-editor-close').forEach(button => {
+      button.onclick = () => { editingSecret = null; refresh(); };
     });
-    document.querySelectorAll('.we-bbs-editor-save').forEach(button => {
-      button.onclick = () => {
-        const editor = button.closest('.we-event-editor');
-        const scope = editor.dataset.bbsScope;
-        const index = Number(editor.dataset.bbsIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretAssets?.[index];
-        if (!a) return;
-        const name = editor.querySelector('.we-bbs-edit-name').value.trim();
-        if (!name) { showToast('资产名称不能为空', true); return; }
-        const exposure = Math.min(100, Math.max(0, Number(editor.querySelector('.we-bbs-edit-exposure').value) || 0));
-        const status = editor.querySelector('.we-bbs-edit-status').value;
-        if (typeof a === 'string') { state.blackbox.secretAssets[index] = { name, exposure, status }; }
-        else { a.name = name; a.exposure = exposure; a.status = status; }
-        saveScopedState(scope, state);
-        editingBBAsset = null;
-        showToast('隐秘资产修改已保存');
-        refresh();
-      };
-    });
-    document.querySelectorAll('.we-bbs-delete').forEach(button => {
-      button.onclick = () => {
-        const scope = button.dataset.bbsScope;
-        const index = Number(button.dataset.bbsIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretAssets?.[index];
-        if (!a || !confirm(`删除隐秘资产"${a.name}"？`)) return;
-        state.blackbox.secretAssets.splice(index, 1);
-        saveScopedState(scope, state);
-        showToast('隐秘资产已删除');
-        refresh();
-      };
-    });
-    document.querySelectorAll('.we-bbs-copy').forEach(button => {
-      button.onclick = () => {
-        const scope = button.dataset.bbsScope;
-        const index = Number(button.dataset.bbsIndex);
-        const state = loadScopedState(scope);
-        const a = state.blackbox?.secretAssets?.[index];
-        if (!a) return;
-        const copy = JSON.parse(JSON.stringify(a));
-        state.blackbox.secretAssets.splice(index + 1, 0, copy);
-        saveScopedState(scope, state);
-        showToast('隐秘资产已复制');
-        refresh();
-      };
-    });
-    // 隐秘行为 ⇄ 隐秘资产：编辑器内顶部「类型」下拉切换即互转
-    document.querySelectorAll('.we-bb-type-select').forEach(select => {
+    // 类型下拉：仅切换显示的表单(view)，不动数据、不保存
+    document.querySelectorAll('.we-secret-type').forEach(select => {
       select.onchange = () => {
-        const kind = select.dataset.bbKind;       // 当前条目类型：action / asset
-        const target = select.value;              // 目标类型
-        if (kind === target) return;
-        const scope = select.dataset.bbScope;
-        const index = Number(select.dataset.bbIndex);
+        if (editingSecret) { editingSecret.view = select.value; refresh(); }
+      };
+    });
+    document.querySelectorAll('.we-secret-save').forEach(button => {
+      button.onclick = () => {
+        const editor = button.closest('.we-secret-editor');
+        const scope = editor.dataset.secretScope;
+        const list = editor.dataset.secretList;            // 条目当前所在桶
+        const index = Number(editor.dataset.secretIndex);
+        const view = editor.dataset.secretView;            // 目标类型（可能与 list 不同）
         const state = loadScopedState(scope);
         state.blackbox = state.blackbox || {};
-        if (kind === 'action') {
-          const a = state.blackbox.secretActions?.[index];
-          if (a === undefined || a === null) return;
-          const src = (typeof a === 'string') ? { action: a } : a;
-          state.blackbox.secretActions.splice(index, 1);
-          if (!Array.isArray(state.blackbox.secretAssets)) state.blackbox.secretAssets = [];
-          state.blackbox.secretAssets.push({ name: src.action || '未命名', exposure: 0, status: '有效' });
-          editingBBAction = null;
-          showToast('已转为隐秘资产');
+        const srcArr = state.blackbox[SECRET_ARR[list]];
+        if (!srcArr || srcArr[index] === undefined) return;
+
+        // 按 view 读取表单，组装目标条目
+        let item, okMsg;
+        if (view === 'action') {
+          const action = editor.querySelector('.we-secret-f-action').value.trim();
+          if (!action) { showToast('行为描述不能为空', true); return; }
+          item = { action, witnesses: editor.querySelector('.we-secret-f-witnesses').value.trim() || '无' };
         } else {
-          const a = state.blackbox.secretAssets?.[index];
-          if (a === undefined || a === null) return;
-          const src = (typeof a === 'string') ? { name: a } : a;
-          state.blackbox.secretAssets.splice(index, 1);
-          if (!Array.isArray(state.blackbox.secretActions)) state.blackbox.secretActions = [];
-          state.blackbox.secretActions.push({ action: src.name || '未命名', witnesses: '无' });
-          editingBBAsset = null;
-          showToast('已转为隐秘行为');
+          const name = editor.querySelector('.we-secret-f-name').value.trim();
+          if (!name) { showToast('资产名称不能为空', true); return; }
+          item = {
+            name,
+            exposure: Math.min(100, Math.max(0, Number(editor.querySelector('.we-secret-f-exposure').value) || 0)),
+            status: editor.querySelector('.we-secret-f-status').value
+          };
+        }
+
+        if (view === list) {
+          srcArr[index] = item;                            // 原地更新
+          okMsg = view === 'action' ? '隐秘行为已保存' : '隐秘资产已保存';
+        } else {
+          srcArr.splice(index, 1);                         // 从旧桶移除
+          const arrKey = SECRET_ARR[view];
+          if (!Array.isArray(state.blackbox[arrKey])) state.blackbox[arrKey] = [];
+          state.blackbox[arrKey].push(item);               // 落入新桶 = 真正的类型转换
+          okMsg = view === 'action' ? '已转为隐秘行为' : '已转为隐秘资产';
         }
         saveScopedState(scope, state);
+        editingSecret = null;
+        showToast(okMsg);
+        refresh();
+      };
+    });
+    document.querySelectorAll('.we-secret-del').forEach(button => {
+      button.onclick = () => {
+        const scope = button.dataset.secretScope;
+        const list = button.dataset.secretList;
+        const index = Number(button.dataset.secretIndex);
+        const state = loadScopedState(scope);
+        const arr = state.blackbox?.[SECRET_ARR[list]];
+        if (!arr || arr[index] === undefined) return;
+        if (!confirm(list === 'action' ? '删除隐秘行为？' : '删除隐秘资产？')) return;
+        arr.splice(index, 1);
+        saveScopedState(scope, state);
+        showToast('已删除');
+        refresh();
+      };
+    });
+    document.querySelectorAll('.we-secret-copy').forEach(button => {
+      button.onclick = () => {
+        const scope = button.dataset.secretScope;
+        const list = button.dataset.secretList;
+        const index = Number(button.dataset.secretIndex);
+        const state = loadScopedState(scope);
+        const arr = state.blackbox?.[SECRET_ARR[list]];
+        if (!arr || arr[index] === undefined) return;
+        arr.splice(index + 1, 0, JSON.parse(JSON.stringify(arr[index])));  // 就近插入
+        saveScopedState(scope, state);
+        showToast('已复制');
         refresh();
       };
     });
@@ -2558,7 +2515,35 @@ window.WORLD_ENGINE_UI = (function() {
       }
       return;
     }
+
+    // 单击信号卡片后显示删除按钮；再次点击同一卡片时保持显示，方便移动端操作
+    var signalCard = e.target.closest('.we-signal-item');
+    if (signalCard && panelBodyElement && panelBodyElement.contains(signalCard)) {
+      panelBodyElement.querySelectorAll('.we-card-active').forEach(function(c){ c.classList.remove('we-card-active'); });
+      signalCard.classList.add('we-card-active');
+      return;
+    }
+
+    // ===== 单击条目卡片显示/隐藏其编辑按钮（移动端无悬停，统一改为点按）=====
+    if (!panelBodyElement || !panelBodyElement.contains(e.target)) return;
+    // 点在按钮/输入控件/展开的编辑器内：交给各自处理器，不切换
+    if (e.target.closest('button, select, input, textarea, label, a, .we-event-editor, .we-rep-dot, .we-climate-btn, .we-signal-item, .we-list-arrow, .we-nav-row, .we-section-toggle')) return;
+    var card = findActionCard(e.target);
+    var wasActive = card && card.classList.contains('we-card-active');
+    // 先收起其它已展开的卡片
+    panelBodyElement.querySelectorAll('.we-card-active').forEach(function(c){ c.classList.remove('we-card-active'); });
+    if (card && !wasActive) card.classList.add('we-card-active');
   });
+
+  /** 找到包含编辑按钮组的条目卡片（其直接子节点里有 .we-event-actions / .we-secret-ops） */
+  function findActionCard(target) {
+    var el = target;
+    while (el && el.nodeType === 1 && el.id !== 'we-panel-body') {
+      if (el.querySelector && el.querySelector(':scope > .we-event-actions, :scope > .we-secret-ops')) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
 
   // 全局事件委托：signal 双击编辑
   document.addEventListener('dblclick', function(e) {
