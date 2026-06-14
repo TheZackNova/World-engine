@@ -2276,3 +2276,144 @@
   opacity: 0.38;
   font-size: 8px;
 }
+
+/* ===== 其余分页小标题：统一宋体，按含义各赋字色 / 字号 / 字重 =====
+   （设置页子标题不带 #we-sec- id，不受影响，保留默认） */
+.we-section[id^="we-sec-"] > .we-section-title .we-section-arrow { font-size: 8px; }
+
+/* 事件链：命运推演之链，烽烟渐起 —— 古铜赤金，分量最重 */
+#we-sec-events > .we-section-title,
+#we-sec-cp-events > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #c0814a;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(192, 129, 74, 0.22);
+  text-shadow: 0 0 16px rgba(192, 129, 74, 0.16);
+}
+#we-sec-events > .we-section-title .we-section-arrow,
+#we-sec-cp-events > .we-section-title .we-section-arrow { color: #c0814a; opacity: 0.5; }
+
+/* 风声：流言随风、虚实难辨 —— 雾紫，疏朗低语 */
+#we-sec-winds > .we-section-title,
+#we-sec-cp-winds > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  color: #9b8fb0;
+  padding-bottom: 8px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(155, 143, 176, 0.18);
+}
+#we-sec-winds > .we-section-title .we-section-arrow,
+#we-sec-cp-winds > .we-section-title .we-section-arrow { color: #9b8fb0; opacity: 0.42; }
+
+/* 影响链：牵一发而动全身 —— 钢青，脉络相连 */
+#we-sec-influence > .we-section-title,
+#we-sec-cp-influence > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.10em;
+  color: #5e98a6;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(94, 152, 166, 0.18);
+}
+#we-sec-influence > .we-section-title .we-section-arrow,
+#we-sec-cp-influence > .we-section-title .we-section-arrow { color: #5e98a6; opacity: 0.4; }
+
+/* 声誉：声名在外 —— 温琥珀 */
+#we-sec-reputation > .we-section-title,
+#we-sec-cp-reputation > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #b6975f;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(182, 151, 95, 0.18);
+}
+#we-sec-reputation > .we-section-title .we-section-arrow,
+#we-sec-cp-reputation > .we-section-title .we-section-arrow { color: #b6975f; opacity: 0.42; }
+
+/* 势力：群雄并立 —— 帝王紫，气度森严 */
+#we-sec-factions > .we-section-title,
+#we-sec-cp-factions > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #8c6fa8;
+  padding-bottom: 8px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(140, 111, 168, 0.20);
+}
+#we-sec-factions > .we-section-title .we-section-arrow,
+#we-sec-cp-factions > .we-section-title .we-section-arrow { color: #8c6fa8; opacity: 0.46; }
+
+/* 仇敌录：血仇难解 —— 沉血红，字距拉开如刻碑 */
+#we-sec-enemies > .we-section-title,
+#we-sec-cp-enemies > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: #a64b48;
+  padding-bottom: 8px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(166, 75, 72, 0.22);
+  text-shadow: 0 0 16px rgba(166, 75, 72, 0.18);
+}
+#we-sec-enemies > .we-section-title .we-section-arrow,
+#we-sec-cp-enemies > .we-section-title .we-section-arrow { color: #a64b48; opacity: 0.48; }
+
+/* 经济：财货流转 —— 铜钱黄 */
+#we-sec-economy > .we-section-title,
+#we-sec-cp-economy > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #bf9c46;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(191, 156, 70, 0.18);
+}
+#we-sec-economy > .we-section-title .we-section-arrow,
+#we-sec-cp-economy > .we-section-title .we-section-arrow { color: #bf9c46; opacity: 0.42; }
+
+/* 秘密：暗藏玄机 —— 幽暗紫，字距最疏、最敛 */
+#we-sec-blackbox > .we-section-title,
+#we-sec-cp-blackbox > .we-section-title {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  color: #79709a;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(121, 112, 154, 0.16);
+}
+#we-sec-blackbox > .we-section-title .we-section-arrow,
+#we-sec-cp-blackbox > .we-section-title .we-section-arrow { color: #79709a; opacity: 0.38; }
+
+/* 存档点：封存此刻 —— 中性钢灰（外层无 id，用 :has 命中其标题） */
+.we-section-title:has(.we-section-toggle[data-section="checkpoint-section"]) {
+  font-family: "SimSun", "宋体", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: #8a93a0;
+  padding-bottom: 7px;
+  margin-bottom: 9px;
+  border-bottom: 1px solid rgba(138, 147, 160, 0.16);
+}
+.we-section-title:has(.we-section-toggle[data-section="checkpoint-section"]) .we-section-arrow {
+  color: #8a93a0; opacity: 0.4; font-size: 8px;
+}
