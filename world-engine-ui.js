@@ -1073,6 +1073,7 @@ window.WORLD_ENGINE_UI = (function() {
           <div class="we-event-actions">
             <button class="we-icon-btn we-bba-delete" data-bba-index="${actIndex}" title="删除隐秘行为"><i class="fa-solid fa-trash-can"></i></button>
             <button class="we-icon-btn we-bba-copy" data-bba-index="${actIndex}" title="复制隐秘行为"><i class="fa-solid fa-copy"></i></button>
+            <button class="we-icon-btn we-bba-switch" data-bba-index="${actIndex}" title="转为隐秘资产"><i class="fa-solid fa-right-left"></i></button>
             <button class="we-icon-btn we-bba-edit" data-bba-index="${actIndex}" title="编辑隐秘行为"><i class="fa-solid fa-pen"></i></button>
           </div>`;
         const editHtml = isEditing ? renderBBActionEditor(a, actIndex) : '';
@@ -1093,6 +1094,7 @@ window.WORLD_ENGINE_UI = (function() {
           <div class="we-event-actions">
             <button class="we-icon-btn we-bbs-delete" data-bbs-index="${astIndex}" title="删除隐秘资产"><i class="fa-solid fa-trash-can"></i></button>
             <button class="we-icon-btn we-bbs-copy" data-bbs-index="${astIndex}" title="复制隐秘资产"><i class="fa-solid fa-copy"></i></button>
+            <button class="we-icon-btn we-bbs-switch" data-bbs-index="${astIndex}" title="转为隐秘行为"><i class="fa-solid fa-right-left"></i></button>
             <button class="we-icon-btn we-bbs-edit" data-bbs-index="${astIndex}" title="编辑隐秘资产"><i class="fa-solid fa-pen"></i></button>
           </div>`;
         const editHtml = isEditing ? renderBBAssetEditor(a, astIndex) : '';
@@ -1789,9 +1791,27 @@ window.WORLD_ENGINE_UI = (function() {
         const a = state.blackbox?.secretActions?.[index];
         if (!a) return;
         const copy = JSON.parse(JSON.stringify(a));
-        state.blackbox.secretActions.push(copy);
+        // 插在原条目之后，避免追加到末页后因翻页器复位而“看不见”
+        state.blackbox.secretActions.splice(index + 1, 0, copy);
         core.saveState(state);
         showToast('隐秘行为已复制');
+        refresh();
+      };
+    });
+    // 隐秘行为 → 隐秘资产
+    document.querySelectorAll('.we-bba-switch').forEach(button => {
+      button.onclick = () => {
+        const index = Number(button.dataset.bbaIndex);
+        const state = core.loadState();
+        const a = state.blackbox?.secretActions?.[index];
+        if (a === undefined || a === null) return;
+        const src = (typeof a === 'string') ? { action: a } : a;
+        const asset = { name: src.action || '未命名', exposure: 0, status: '有效' };
+        state.blackbox.secretActions.splice(index, 1);
+        if (!Array.isArray(state.blackbox.secretAssets)) state.blackbox.secretAssets = [];
+        state.blackbox.secretAssets.push(asset);
+        core.saveState(state);
+        showToast('已转为隐秘资产');
         refresh();
       };
     });
@@ -1843,9 +1863,26 @@ window.WORLD_ENGINE_UI = (function() {
         const a = state.blackbox?.secretAssets?.[index];
         if (!a) return;
         const copy = JSON.parse(JSON.stringify(a));
-        state.blackbox.secretAssets.push(copy);
+        state.blackbox.secretAssets.splice(index + 1, 0, copy);
         core.saveState(state);
         showToast('隐秘资产已复制');
+        refresh();
+      };
+    });
+    // 隐秘资产 → 隐秘行为
+    document.querySelectorAll('.we-bbs-switch').forEach(button => {
+      button.onclick = () => {
+        const index = Number(button.dataset.bbsIndex);
+        const state = core.loadState();
+        const a = state.blackbox?.secretAssets?.[index];
+        if (a === undefined || a === null) return;
+        const src = (typeof a === 'string') ? { name: a } : a;
+        const action = { action: src.name || '未命名', witnesses: '无' };
+        state.blackbox.secretAssets.splice(index, 1);
+        if (!Array.isArray(state.blackbox.secretActions)) state.blackbox.secretActions = [];
+        state.blackbox.secretActions.push(action);
+        core.saveState(state);
+        showToast('已转为隐秘行为');
         refresh();
       };
     });

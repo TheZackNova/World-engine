@@ -420,14 +420,19 @@
   gap: 3px;
 }
 
-.we-accident-item.we-regional-incident-item,
-.we-accident-item.we-blackbox-item {
+.we-accident-item.we-regional-incident-item {
   padding-right: 94px;
 }
+/* 隐秘行为/资产多一枚“转类型”按钮，预留更宽 */
+.we-accident-item.we-blackbox-item {
+  padding-right: 120px;
+}
 
-.we-regional-incident-item > .we-event-editor,
-.we-blackbox-item > .we-event-editor {
+.we-regional-incident-item > .we-event-editor {
   margin-right: -84px;
+}
+.we-blackbox-item > .we-event-editor {
+  margin-right: -110px;
 }
 
 /* ===== 信息网格 ===== */
