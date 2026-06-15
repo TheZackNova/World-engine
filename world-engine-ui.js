@@ -20,7 +20,7 @@ window.WORLD_ENGINE_UI = (function() {
   let editingSecret = null;
   let listPagerCounter = 0;
   const listPageState = {};
-  const sectionCollapsed = { 'checkpoint-section': true };
+  const sectionCollapsed = { 'checkpoint-section': true, 'set-filter': true };
   const expandedWorldbookGroups = new Set();
   // 世界书缓存（模块级，跨 refresh() 存活）
   let _wbCachedEntries = null;
@@ -1383,10 +1383,12 @@ window.WORLD_ENGINE_UI = (function() {
           <input type="number" id="we-time-current" step="any" value="${lastDayVal}" placeholder="保存即判断是否推演" style="width:100%;">
           <div style="font-size:11px;color:var(--we-text3);margin-top:3px;">保存后：与基准时间相减，够 N 天则立即推演。三个时间框都只在有值时写入，写错可关闭插件重开重填。</div>
         </div>
-      </div>
+      </div>`;
+
+    const filterBody = `
       <div class="we-input-group">
-        <label>输入输出过滤器（每行一条正则）</label>
-        <textarea id="we-filter-regex" rows="3" style="width:100%;resize:vertical;" placeholder="每行一条正则，匹配到的内容会被删除\n例如 &lt;think&gt;[\\s\\S]*?&lt;/think&gt;">${u(tv('evolveFilterRegex',''))}</textarea>
+        <label>每行一条正则，匹配内容会在喂后台前删除</label>
+        <textarea id="we-filter-regex" rows="4" style="width:100%;resize:vertical;" placeholder="例如 &lt;think&gt;[\\s\\S]*?&lt;/think&gt;">${u(tv('evolveFilterRegex',''))}</textarea>
         <div style="font-size:11px;color:var(--we-text3);margin-top:3px;">对每条「用户/AI」文本逐行做 g 全局替换为空，再拼装喂后台推演。不影响聊天正文，也不影响日期抓取。</div>
       </div>`;
 
@@ -1412,6 +1414,7 @@ window.WORLD_ENGINE_UI = (function() {
 
     return sec('set-api', 'API 配置', apiBody)
       + sec('set-evolve', '推演模式', evolveBody)
+      + sec('set-filter', '输入输出过滤器', filterBody)
       + sec('set-display', '界面显示', displayBody)
       + sec('set-inject', '正文注入', injectBody);
   }
@@ -3003,10 +3006,9 @@ window.WORLD_ENGINE_UI = (function() {
   function setBallState(text, isError) {
     const ball = document.getElementById('we-input-btn');
     if (!ball) return;
-    const tip = ball.querySelector('.we-ball-tip');
     const ring = ball.querySelector('.we-ball-ring');
     const badge = ball.querySelector('.we-ball-badge');
-    if (tip) tip.textContent = text || '';
+    // 悬浮球不显示状态文字（文字走屏幕顶部横幅）
 
     ball.classList.remove('we-ball-evolving', 'we-ball-success', 'we-ball-fail');
     clearTimeout(_ballStatusTimer);
@@ -3050,8 +3052,23 @@ window.WORLD_ENGINE_UI = (function() {
     ball.classList.remove('we-ball-success', 'we-ball-fail');
     const badge = ball.querySelector('.we-ball-badge');
     if (badge) badge.textContent = '';
-    const tip = ball.querySelector('.we-ball-tip');
-    if (tip) tip.textContent = '';
+  }
+
+  // 屏幕正上方状态横幅：显示约 5s 后淡出
+  let _topStatusTimer = null;
+  function showTopStatus(text, isError) {
+    if (!document.body || !text) return;
+    let el = document.getElementById('we-top-status');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'we-top-status';
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.classList.toggle('we-top-status-error', !!isError);
+    el.classList.add('show');
+    clearTimeout(_topStatusTimer);
+    _topStatusTimer = setTimeout(() => { el.classList.remove('show'); }, 5000);
   }
 
   function buildInputButton() {
@@ -3094,6 +3111,10 @@ window.WORLD_ENGINE_UI = (function() {
       const el = document.getElementById('we-external-status');
       if (el) el.textContent = text;
       setBallState(text || '', !!isError);
+      // 进度类（第 N/X 轮/天）只在悬浮球上显示；其余状态走屏幕顶部横幅
+      if (text && !/第\s*\d+\s*\/\s*\d+\s*[轮天]/.test(text)) {
+        showTopStatus(text, !!isError);
+      }
     };
 
     buildPanel();
