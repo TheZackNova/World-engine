@@ -2020,7 +2020,18 @@ window.WORLD_ENGINE_UI = (function() {
         const lastMsg = chat[chat.length - 1];
         const userMsg = lastMsg?.is_user ? (lastMsg.mes || '') : '';
         const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '') : '';
-        const ok = await evolution.evolve(s, userMsg, aiMsg, { mode });
+        // 读取轮数：自动模式跟随 a（1..X），手动模式固定本轮（1 轮 = 用户+AI）。start 做负数保护。
+        const st = window.WORLD_ENGINE_API ? window.WORLD_ENGINE_API.getSettings(true) : {};
+        const everyX = Math.max(1, parseInt(st.evolveEveryX) || 1);
+        const rounds = st.evolveMode === 'manual'
+          ? 1
+          : Math.min(everyX, Math.max(1, parseInt(st.evolveReadRounds) || 1));
+        const start = Math.max(0, chat.length - rounds * 2);
+        const dialogueText = chat.slice(start)
+          .map(m => (m.is_user ? '用户' : 'AI') + '：' + ((m.mes || '').trim()))
+          .filter(line => line.length > 3)
+          .join('\n');
+        const ok = await evolution.evolve(s, userMsg, aiMsg, { mode, dialogueText });
         if (ok && window.WORLD_ENGINE_LEDGER) window.WORLD_ENGINE_LEDGER.recordChanges(s);
         if (ok && window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
         if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(ok ? '推演完成' : '推演失败', !ok);
