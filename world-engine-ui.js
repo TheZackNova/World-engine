@@ -2081,12 +2081,22 @@ window.WORLD_ENGINE_UI = (function() {
         const lastMsg = chat[chat.length - 1];
         const userMsg = lastMsg?.is_user ? (lastMsg.mes || '') : '';
         const aiMsg = !lastMsg?.is_user ? (lastMsg?.mes || '') : '';
-        // 读取轮数：自动模式跟随 a（1..X），手动模式固定本轮（1 轮 = 用户+AI）。start 做负数保护。
+        // 读取轮数：手动/时间模式 → min(自上次推演经过轮数, 上限X)；按轮模式 → a（≤X）。start 做负数保护。
         const st = window.WORLD_ENGINE_API ? window.WORLD_ENGINE_API.getSettings(true) : {};
-        const everyX = Math.max(1, parseInt(st.evolveEveryX) || 1);
-        const rounds = st.evolveMode === 'manual'
-          ? 1
-          : Math.min(everyX, Math.max(1, parseInt(st.evolveReadRounds) || 1));
+        let rounds;
+        if (st.evolveMode === 'manual' || st.evolveMode === 'time') {
+          const Xmax = Math.max(1, parseInt(st.evolveTimeMaxRounds) || 10);
+          const cpp = core.restoreCheckpoint();
+          const L = core.getChatLayer();
+          let anchorL = (cpp && cpp.chatLayer != null) ? Number(cpp.chatLayer)
+                      : (s && s.chatLayer != null ? Number(s.chatLayer) : L);
+          if (!Number.isFinite(anchorL)) anchorL = L;
+          const since = Math.floor(Math.max(0, L - anchorL) / 2);
+          rounds = Math.max(1, Math.min(since, Xmax));
+        } else {
+          const everyX = Math.max(1, parseInt(st.evolveEveryX) || 1);
+          rounds = Math.min(everyX, Math.max(1, parseInt(st.evolveReadRounds) || 1));
+        }
         const start = Math.max(0, chat.length - rounds * 2);
         const dialogueText = chat.slice(start)
           .map(m => (m.is_user ? '用户' : 'AI') + '：' + core.filterDialogue((m.mes || '').trim(), st))
