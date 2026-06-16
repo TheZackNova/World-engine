@@ -273,6 +273,7 @@
   border-radius: 50%;
   background: var(--we-accent);
   flex-shrink: 0;
+  transform: translateY(3px);
 }
 .we-header-mood-text {
   font-family: "Songti SC", "SimSun", "STSong", serif;
