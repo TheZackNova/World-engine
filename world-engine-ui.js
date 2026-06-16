@@ -1433,8 +1433,27 @@ window.WORLD_ENGINE_UI = (function() {
       </div>
       <div class="we-chatcache-list" id="we-chatcache-snapshots"><div class="we-empty">暂无存档</div></div>`;
 
+    // 批量重填世界推演：从第 1 个 AI 楼层分批推到指定楼层（清空重来）。
+    const bf = (k, d) => { const v = settings[k]; return (v === undefined || v === null || v === '') ? d : v; };
+    const backfillBody = `
+      <div style="font-size:11px;color:var(--we-text3);margin-bottom:6px;">从第 1 个 AI 楼层开始，<b>分批</b>把世界状态重新推演到指定楼层。每批仅喂本批楼层的对话，但世界状态逐批累积、保持连贯。<b>会清空当前世界状态推倒重来</b>（开始前自动存一份备份快照）。</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div class="we-input-group" style="flex:1;min-width:90px;margin-bottom:0;"><label>每批 AI 楼层数</label>
+          <input type="number" id="we-backfill-batch" min="1" step="1" value="${bf('backfillBatchSize', 5)}"></div>
+        <div class="we-input-group" style="flex:1;min-width:90px;margin-bottom:0;"><label>结束楼层（0=全部）</label>
+          <input type="number" id="we-backfill-end" min="0" step="1" value="${bf('backfillEndLayer', 0)}"></div>
+        <div class="we-input-group" style="flex:1;min-width:90px;margin-bottom:0;"><label>每批重试次数</label>
+          <input type="number" id="we-backfill-retries" min="0" step="1" value="${bf('backfillRetries', 2)}"></div>
+      </div>
+      <div class="we-hint" id="we-backfill-status" style="margin:6px 0;"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0;">
+        <button class="we-btn we-btn-primary" id="we-backfill-start">▶ 开始重填世界推演</button>
+        <button class="we-btn" id="we-backfill-stop">■ 停止</button>
+      </div>`;
+
     return sec('set-api', 'API 配置', apiBody)
       + sec('set-evolve', '推演模式', evolveBody)
+      + sec('set-backfill', '批量重填世界推演', backfillBody)
       + sec('set-filter', '输入输出过滤器', filterBody)
       + sec('set-display', '界面显示', displayBody)
       + sec('set-chatcache', '酒馆缓存与存档', chatcacheBody)
@@ -2707,6 +2726,31 @@ window.WORLD_ENGINE_UI = (function() {
       render();
     })();
 
+    // ===== 批量重填世界推演 =====
+    (function setupBackfillSection() {
+      const startBtn = document.getElementById('we-backfill-start');
+      const stopBtn = document.getElementById('we-backfill-stop');
+      if (!startBtn) return; // 不在设置页
+
+      const persistBf = (key, val) => {
+        const wapi = window.WORLD_ENGINE_API;
+        const cur = wapi && wapi.getSettings ? wapi.getSettings(true) : {};
+        window.WORLD_ENGINE_STORE.setItem('world_engine_settings', JSON.stringify({ ...cur, [key]: val }));
+        if (wapi && wapi.getSettings) wapi.getSettings(true);
+      };
+      const batchEl = document.getElementById('we-backfill-batch');
+      const endEl = document.getElementById('we-backfill-end');
+      const retriesEl = document.getElementById('we-backfill-retries');
+      if (batchEl) batchEl.onchange = () => persistBf('backfillBatchSize', Math.max(1, parseInt(batchEl.value) || 1));
+      if (endEl) endEl.onchange = () => persistBf('backfillEndLayer', Math.max(0, parseInt(endEl.value) || 0));
+      if (retriesEl) retriesEl.onchange = () => persistBf('backfillRetries', Math.max(0, parseInt(retriesEl.value) || 0));
+
+      startBtn.onclick = () => runBackfill();
+      if (stopBtn) stopBtn.onclick = () => {
+        if (evolution && evolution.abort) { evolution.abort(); showToast('已发送停止信号'); }
+      };
+    })();
+
     // 调试区导出按钮
     function setupDownload(content, filename) {
       const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -3044,6 +3088,99 @@ window.WORLD_ENGINE_UI = (function() {
     refresh();
   }
 
+  // 批量「重填世界推演」：清空当前世界状态，从第 1 个 AI 楼层分批推到指定楼层。
+  async function runBackfill() {
+    if (isEvolving) { showToast('已有推演进行中，请稍候'); return; }
+    if (evolution.isRunning?.()) { showToast('已有推演进行中，请稍候'); return; }
+
+    const st = window.WORLD_ENGINE_API ? window.WORLD_ENGINE_API.getSettings(true) : {};
+    const batchSize = Math.max(1, parseInt(st.backfillBatchSize) || 1);
+    const retries = Math.max(0, parseInt(st.backfillRetries) || 0);
+    let endLayer = Math.max(0, parseInt(st.backfillEndLayer) || 0);
+
+    // 统计当前 AI 楼层数，给出确认信息
+    let aiCount = 0;
+    try {
+      const ctx = SillyTavern.getContext();
+      const chat = (ctx && ctx.chat) || [];
+      for (const m of chat) if (m && !m.is_user && String(m.mes || '').trim()) aiCount++;
+    } catch (e) {}
+    if (!aiCount) { showToast('当前聊天没有可推演的 AI 楼层', true); return; }
+    const effectiveEnd = (endLayer > 0 && endLayer <= aiCount) ? endLayer : aiCount;
+    const totalBatches = Math.max(1, Math.ceil(effectiveEnd / batchSize));
+
+    const statusEl = document.getElementById('we-backfill-status');
+    const setBfStatus = (t) => { if (statusEl) statusEl.textContent = t; };
+
+    if (!confirm(
+      `「重填世界推演」将清空当前世界状态，从第 1 个 AI 楼层重新推演到第 ${effectiveEnd} 层，` +
+      `共约 ${totalBatches} 批、每批最多重试 ${retries} 次。\n` +
+      `开始前会自动存一份备份快照。\n确定推倒重来？`
+    )) return;
+
+    // 回填前自动备份（chatcache 不可用则静默跳过）
+    try {
+      const cc = window.WORLD_ENGINE_CHATCACHE;
+      if (cc && cc.createSnapshot) {
+        const snap = cc.createSnapshot('回填前自动备份');
+        if (snap) showToast('已存回填前备份快照');
+      }
+    } catch (e) { console.warn('[世界引擎] 回填前备份失败（不影响回填）', e); }
+
+    isEvolving = true;
+    setEvolvingUI(true, 'state');
+    refresh(true);
+    if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('回填中...');
+    setBfStatus('开始回填...');
+
+    try {
+      const result = await evolution.backfillEvolve({
+        batchSize, retries, endLayer,
+        onProgress: (p) => {
+          if (p.phase === 'batch-start') {
+            setBfStatus(`第 ${p.batch}/${p.totalBatches} 批（第 ${p.layerFrom}-${p.layerTo} 层）推演中...`);
+            if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(`回填中 ${p.batch}/${p.totalBatches}`);
+          } else if (p.phase === 'retry') {
+            setBfStatus(`第 ${p.batch}/${p.totalBatches} 批失败，重试 ${p.attempt}/${retries}...`);
+            if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus(`回填中 ${p.batch}/${p.totalBatches}`);
+          } else if (p.phase === 'batch-done') {
+            setBfStatus(`第 ${p.batch}/${p.totalBatches} 批完成（已推进到第 ${p.round} 轮）`);
+            refresh(true);
+          }
+        }
+      });
+
+      if (result.done) {
+        setBfStatus(`✅ 回填完成，共 ${result.completedBatches}/${result.totalBatches} 批`);
+        showToast(`回填完成，共 ${result.completedBatches} 批`);
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('回填完成');
+        if (window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
+      } else if (result.reason === 'aborted') {
+        setBfStatus(`🛑 已中止，完成 ${result.completedBatches}/${result.totalBatches} 批`);
+        showToast(`回填已中止（完成 ${result.completedBatches} 批）`);
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('回填已中止');
+        if (window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
+      } else if (result.reason === 'no-ai-layers') {
+        setBfStatus('当前聊天没有可推演的 AI 楼层');
+        showToast('当前聊天没有可推演的 AI 楼层', true);
+      } else if (result.reason === 'busy') {
+        showToast('已有推演进行中，请稍候', true);
+      } else {
+        setBfStatus(`❌ 第 ${result.failedAt || '?'} 批失败，已停止（完成 ${result.completedBatches || 0} 批）`);
+        showToast(`回填在第 ${result.failedAt || '?'} 批失败已停止`, true);
+        if (window.__WE_SetExternalStatus) window.__WE_SetExternalStatus('回填失败', true);
+        if (window.WORLD_ENGINE?.applyInjection) window.WORLD_ENGINE.applyInjection();
+      }
+    } catch (e) {
+      setBfStatus('❌ 回填异常: ' + (e && e.message || e));
+      showToast('回填异常: ' + (e && e.message || e), true);
+    } finally {
+      isEvolving = false;
+      setEvolvingUI(false);
+      refresh();
+    }
+  }
+
   // ========== 世界引擎悬浮球 ==========
   let inputButtonObserver = null;
   let inputButtonRetryTimer = null;
@@ -3201,7 +3338,21 @@ window.WORLD_ENGINE_UI = (function() {
       if (ring) ring.style.setProperty('--we-ring-pct', '0deg');
     };
 
-    if (/推演中/.test(text)) {
+    if (/回填中/.test(text)) {
+      // 批量回填：地球持续旋转 + 右下角显示「批/总」进度
+      ball.classList.add('we-ball-evolving');
+      if (badge) badge.textContent = '';
+      const mb = /(\d+)\s*\/\s*(\d+)/.exec(text);
+      if (mb && ring) {
+        const cur = Number(mb[1]), total = Number(mb[2]) || 1;
+        const pct = Math.max(0, Math.min(1, cur / total));
+        ring.style.setProperty('--we-ring-pct', (pct * 360) + 'deg');
+        ball.classList.add('we-ball-counting');
+        if (count) count.textContent = `${cur}/${total}`;
+      } else {
+        clearCount();
+      }
+    } else if (/推演中/.test(text)) {
       ball.classList.add('we-ball-evolving');
       if (badge) badge.textContent = '';
       clearCount(); // 推演进行中不展示轮次计数，避免残留旧的 N/X
@@ -3317,8 +3468,8 @@ window.WORLD_ENGINE_UI = (function() {
       const el = document.getElementById('we-external-status');
       if (el) el.textContent = text;
       setBallState(text || '', !!isError);
-      // 进度类（第 N/X 轮/天）只在悬浮球上显示；其余状态走屏幕顶部横幅
-      if (text && !/第\s*\d+\s*\/\s*\d+\s*[轮天]/.test(text)) {
+      // 进度类（第 N/X 轮/天、回填中 i/M）只在悬浮球上显示；其余状态走屏幕顶部横幅
+      if (text && !/第\s*\d+\s*\/\s*\d+\s*[轮天]/.test(text) && !/回填中/.test(text)) {
         showTopStatus(text, !!isError);
       }
     };
