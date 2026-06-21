@@ -1347,6 +1347,14 @@ window.WORLD_ENGINE_UI = (function() {
 
     const apiBody = `
       <div class="we-input-group">
+        <label>连接方式</label>
+        <select id="we-connection-mode" style="width:100%;">
+          <option value="direct" ${settings.connectionMode !== 'proxy' ? 'selected' : ''}>直连（默认）</option>
+          <option value="proxy" ${settings.connectionMode === 'proxy' ? 'selected' : ''}>经酒馆代理（解决跨域 CORS）</option>
+        </select>
+        <div style="font-size:11px;color:#888;margin-top:3px;">连不上 / 控制台报 CORS 错误时，切到「经酒馆代理」由酒馆服务端转发。</div>
+      </div>
+      <div class="we-input-group">
         <label>API URL（OpenAI 兼容）</label>
         <input type="text" id="we-api-url" value="${u(settings.apiUrl||'')}" placeholder="https://api.openai.com/v1">
       </div>
@@ -2191,6 +2199,7 @@ window.WORLD_ENGINE_UI = (function() {
           apiUrl: document.getElementById('we-api-url')?.value || '',
           apiKey: document.getElementById('we-api-key')?.value || '',
           model: document.getElementById('we-model')?.value || 'gpt-3.5-turbo',
+          connectionMode: document.getElementById('we-connection-mode')?.value === 'proxy' ? 'proxy' : 'direct',
           injectIntoPrompt: document.getElementById('we-inject-into-prompt')?.checked !== false,
           syncToChat: document.getElementById('we-sync-to-chat')?.checked === true,
           autoBackup: document.getElementById('we-auto-backup')?.checked === true,
@@ -2508,6 +2517,7 @@ window.WORLD_ENGINE_UI = (function() {
           apiUrl: document.getElementById('we-api-url')?.value || '',
           apiKey: document.getElementById('we-api-key')?.value || '',
           model: document.getElementById('we-model')?.value || '',
+          connectionMode: document.getElementById('we-connection-mode')?.value === 'proxy' ? 'proxy' : 'direct',
           injectIntoPrompt: document.getElementById('we-inject-into-prompt')?.checked !== false
         }));
         if (api.getSettings) api.getSettings(true);
