@@ -50,6 +50,7 @@ window.WORLD_ENGINE_DIAG = (function() {
     const chatcache = window.WORLD_ENGINE_CHATCACHE;
     const worldbook = window.WORLD_ENGINE_WORLDBOOK;
     const rules = window.WORLD_ENGINE_RULES;
+    const preset = window.WORLD_ENGINE_PRESET;
 
     const diag = {};
 
@@ -140,13 +141,20 @@ window.WORLD_ENGINE_DIAG = (function() {
     diag.evolution = safe(function () {
       if (!evo) return { error: 'evolution 模块不可用' };
       const dbg = evo.getLastDebug ? evo.getLastDebug() : {};
+      // [FIX] 补采 PR#12 的 prompt 分段结构：只存 key/label/长度，不重复存完整文本
+      //   （完整内容已在 lastPrompt；分段用于核对哪段被预设覆盖、各段占比）。
+      const segs = (dbg && Array.isArray(dbg.segments)) ? dbg.segments : [];
       return {
         isRunning: evo.isRunning ? evo.isRunning() : null,
         lastError: evo.getLastError ? evo.getLastError() : null,
         lastPrompt: (dbg && dbg.prompt) || '',
         lastRawResult: (dbg && dbg.rawResult) || '',
         lastPromptLen: ((dbg && dbg.prompt) || '').length,
-        lastRawResultLen: ((dbg && dbg.rawResult) || '').length
+        lastRawResultLen: ((dbg && dbg.rawResult) || '').length,
+        segmentCount: segs.length,
+        segments: segs.map(function (s) {
+          return { key: (s && s.key) || null, label: (s && s.label) || null, contentLen: ((s && s.content) || '').length };
+        })
       };
     });
 
@@ -185,6 +193,28 @@ window.WORLD_ENGINE_DIAG = (function() {
     diag.rules = safe(function () {
       if (!rules || !rules.getRuleCount) return { error: 'rules 模块不可用' };
       return { ruleCount: rules.getRuleCount() };
+    });
+
+    // —— 引擎预设（PR#13 引入；诊断包此前未采集——排错时看不到当前预设与覆盖段）——
+    diag.preset = safe(function () {
+      if (!preset) return { error: 'preset 模块不可用' };
+      const active = preset.getActivePreset ? preset.getActivePreset() : null;
+      const overridden = preset.getOverriddenSegKeys ? preset.getOverriddenSegKeys() : [];
+      const custom = preset.getCustomPresets ? preset.getCustomPresets() : [];
+      const all = preset.getAllPresets ? preset.getAllPresets() : [];
+      return {
+        activeId: preset.getActivePresetId ? preset.getActivePresetId() : null,
+        activeName: (active && (active.name || active.id)) || null,
+        activeIsBuiltin: !!(active && active.builtin),
+        overriddenSegKeys: Array.isArray(overridden) ? overridden.slice() : [],
+        overriddenCount: Array.isArray(overridden) ? overridden.length : 0,
+        presetCount: Array.isArray(all) ? all.length : 0,
+        customPresetCount: Array.isArray(custom) ? custom.length : 0,
+        // 仅列 id+name+builtin，不导出完整段文本（避免体积膨胀与潜在泄露）
+        customPresetList: Array.isArray(custom) ? custom.map(function (p) {
+          return { id: (p && p.id) || null, name: (p && p.name) || null, builtin: !!(p && p.builtin) };
+        }) : []
+      };
     });
 
     return diag;
