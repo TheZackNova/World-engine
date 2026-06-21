@@ -612,6 +612,13 @@ type：${picked.type}
   "blackbox": { "secretActions": [], "secretAssets": [] }
 }`;
 
+  // [MAP] 引擎预设：把引擎角色指令、因果检查10步提成模块级 const（内容与原函数内常量逐字一致），
+  // 作为「默认预设」的单一真相源，供 world-engine-preset.js 引用（避免双份拷贝漂移）。
+  // callEvolutionAPI 内不再重新定义，直接引用此处；覆写层用 Final 变量区分默认值与用户覆写。
+  const DEFAULT_SEG_ENGINE_ROLE = `你是一个世界推演引擎。每轮对话后，后台世界必须自动向前推进一步。\n请根据世界规则和本轮对话，更新世界状态。只输出 JSON，不要有其他文字。`;
+
+  const DEFAULT_SEG_CAUSAL_STEPS = `推演时按以下因果顺序检查：\n1. 【私密判定·最先执行】先判定本轮 {{user}} 及相关人物的行为有无目击者、是否留下可追溯痕迹。凡在无目击、未留痕迹的情况下发生的私密行为（独处、私密情爱、闺房之事、密室密谈、隐秘潜入、无人时的杀伐等），一律计入 blackbox.secretActions（witnesses 标"无"或"仅XX"），并且：不得据此生成风声、不得改变任何维度声誉、不得形成或推进事件链、不得让任何不在场 NPC 据此行动。只有当该行为被目击、留下可追溯痕迹、或事后确实被传播后，才可转为公开影响。\n2. 将所有持续中的天下大势作为本轮世界级约束，并检查是否形成新大势或已有大势明确结束。\n3. 判断本轮事实、行动与公开信息是否形成新风声（私密行为除外，见第1步）。\n4. 检查已有风声是否获得新的合法传播节点，并据此更新 level/scope/content/source。\n5. 判断风声实际覆盖了哪些势力、圈层或行动者；只有被覆盖者才能据此改变判断与行动。\n6. 天下大势或风声造成跨系统变化时，在对应状态字段中落实结果，并用 influenceChain 记录传导过程。\n7. 声誉判定：只有当 {{user}} 的行为已形成覆盖对应圈层的风声后，才改动对应维度声誉；私密、未传播或仅单人目击的行为不改变群体声誉。\n8. 仇敌判定：判断本轮是否产生触发血仇/恩怨的不可逆伤害；已有仇敌只有通过覆盖其情报来源的风声或其他合法渠道获知线索后，才能推进追踪，且受势力等级约束，不得凭空定位 {{user}}。\n9. 经济判定：只有事件链或可追溯的外部原因驱动时才更新 climate 与 signals；重大经济变化须生成对应风声，禁止凭空波动。\n10. 不得从面板全知信息直接跳到 NPC 行动，不得为了产生联动而虚构传播节点。`;
+
   async function callEvolutionAPI(state, userMsg, aiMsg, extraInstruction = '', dialogueText = '') {
     const rulesLoader = window.WORLD_ENGINE_RULES;
     const fullRules = rulesLoader ? rulesLoader.getAllRulesText() : '【规则加载失败】';
@@ -623,11 +630,14 @@ type：${picked.type}
       ? `\n\n========== 附加提示词（用户自定义 · 优先遵守 · 但不得违反上述输出 JSON 格式）==========\n${tonePrompt}`
       : '';
 
-    // [MAP] 把原模板字面量里写死的 4 段提成命名变量：模板与 segments 引用同一变量，
-    // 保证展示段与实际发出 prompt 字节级一致。内容与原模板逐字一致，未改文案。
-    const segEngineRole = `你是一个世界推演引擎。每轮对话后，后台世界必须自动向前推进一步。\n请根据世界规则和本轮对话，更新世界状态。只输出 JSON，不要有其他文字。`;
-
-    const segCausalSteps = `推演时按以下因果顺序检查：\n1. 【私密判定·最先执行】先判定本轮 {{user}} 及相关人物的行为有无目击者、是否留下可追溯痕迹。凡在无目击、未留痕迹的情况下发生的私密行为（独处、私密情爱、闺房之事、密室密谈、隐秘潜入、无人时的杀伐等），一律计入 blackbox.secretActions（witnesses 标"无"或"仅XX"），并且：不得据此生成风声、不得改变任何维度声誉、不得形成或推进事件链、不得让任何不在场 NPC 据此行动。只有当该行为被目击、留下可追溯痕迹、或事后确实被传播后，才可转为公开影响。\n2. 将所有持续中的天下大势作为本轮世界级约束，并检查是否形成新大势或已有大势明确结束。\n3. 判断本轮事实、行动与公开信息是否形成新风声（私密行为除外，见第1步）。\n4. 检查已有风声是否获得新的合法传播节点，并据此更新 level/scope/content/source。\n5. 判断风声实际覆盖了哪些势力、圈层或行动者；只有被覆盖者才能据此改变判断与行动。\n6. 天下大势或风声造成跨系统变化时，在对应状态字段中落实结果，并用 influenceChain 记录传导过程。\n7. 声誉判定：只有当 {{user}} 的行为已形成覆盖对应圈层的风声后，才改动对应维度声誉；私密、未传播或仅单人目击的行为不改变群体声誉。\n8. 仇敌判定：判断本轮是否产生触发血仇/恩怨的不可逆伤害；已有仇敌只有通过覆盖其情报来源的风声或其他合法渠道获知线索后，才能推进追踪，且受势力等级约束，不得凭空定位 {{user}}。\n9. 经济判定：只有事件链或可追溯的外部原因驱动时才更新 climate 与 signals；重大经济变化须生成对应风声，禁止凭空波动。\n10. 不得从面板全知信息直接跳到 NPC 行动，不得为了产生联动而虚构传播节点。`;
+    // [MAP] 引擎预设覆写层：默认值用模块级 DEFAULT_SEG_*（单一真相源，逐字等于原模板），
+    // 若当前激活预设对某段有自定义覆写则用覆写值，否则用默认值。
+    // 激活「默认」预设（无任何覆写）时，4 个 Final 变量逐字等于原常量 → 拼装结果字节级等同 PR#12 现状。
+    const _P = window.WORLD_ENGINE_PRESET;
+    const segEngineRole = (_P && typeof _P.getSegmentOverride === 'function' && _P.getSegmentOverride('engine-role')) || DEFAULT_SEG_ENGINE_ROLE;
+    const segCausalSteps = (_P && typeof _P.getSegmentOverride === 'function' && _P.getSegmentOverride('causal-steps')) || DEFAULT_SEG_CAUSAL_STEPS;
+    const segOutputInstructions = (_P && typeof _P.getSegmentOverride === 'function' && _P.getSegmentOverride('output-format')) || OUTPUT_INSTRUCTIONS;
+    const segJsonExample = (_P && typeof _P.getSegmentOverride === 'function' && _P.getSegmentOverride('json-example')) || JSON_EXAMPLE;
 
     const segStateBlock = `## 当前世界状态（第${state.round}轮）\n${JSON.stringify({
   round: state.round,
@@ -649,13 +659,14 @@ type：${picked.type}
     const segToneSection = toneSection;
 
     // [MAP] 实际发出的完整 prompt：与原模板逐字相同的拼接顺序与分隔，零语义漂移。
+    // 4 段用上方的 seg*（覆写层 Final 变量）：无覆写时逐字等于原常量。
     const prompt = segEngineRole + '\n\n' + segCausalSteps
       + '\n\n========== 世界推演规则 ==========\n' + fullRules
       + '\n\n' + worldbookSection
       + '\n\n' + segStateBlock
       + '\n\n' + segDialogue
-      + '\n\n' + OUTPUT_INSTRUCTIONS
-      + '\n' + JSON_EXAMPLE
+      + '\n\n' + segOutputInstructions
+      + '\n' + segJsonExample
       + '\n' + (extraInstruction ? '\n' + extraInstruction : '') + toneSection;
 
     // [MAP] 分段镜像（全透明展示用，只读）。各段 content 与上方 prompt 引用同一变量。
@@ -667,8 +678,8 @@ type：${picked.type}
       { key: 'worldbook',      label: '④ 世界书注入',              content: worldbookSection },
       { key: 'state',          label: '⑤ 当前世界状态（JSON）',     content: segStateBlock },
       { key: 'dialogue',       label: '⑥ 近期对话',                content: segDialogue },
-      { key: 'output-format',  label: '⑦ JSON 输出字段说明',       content: OUTPUT_INSTRUCTIONS },
-      { key: 'json-example',   label: '⑧ JSON 示例',               content: JSON_EXAMPLE },
+      { key: 'output-format',  label: '⑦ JSON 输出字段说明',       content: segOutputInstructions },
+      { key: 'json-example',   label: '⑧ JSON 示例',               content: segJsonExample },
       { key: 'extra-instr',    label: '⑨ 附加指令',                content: segExtraInstruction },
       { key: 'tone',           label: '⑩ 附加提示词（用户自定义）', content: segToneSection }
     ];
@@ -1132,6 +1143,15 @@ type：${picked.type}
     forceTriggerEvents,
     decayWinds,
     state: () => core.loadState()
+  };
+
+  // [MAP] 引擎预设：暴露 4 段默认文本给 world-engine-preset.js 作「默认预设」单一真相源。
+  // 只读引用，避免 preset 模块双份拷贝导致默认值漂移。
+  window.WORLD_ENGINE_EVOLUTION_DEFAULT_SEGS = {
+    'engine-role':   DEFAULT_SEG_ENGINE_ROLE,
+    'causal-steps':  DEFAULT_SEG_CAUSAL_STEPS,
+    'output-format': OUTPUT_INSTRUCTIONS,
+    'json-example':  JSON_EXAMPLE
   };
 
   return { evolve, backfillEvolve, getLastDebug, abort, isRunning, getLastError };

@@ -449,7 +449,14 @@ window.WORLD_ENGINE_UI = (function() {
       + '<div class="we-section-title"><span class="we-debug-toggle" title="展开或收起调试信息"><span class="we-toggle-arrow">▶</span>调试</span></div>'
       + '<div id="we-debug-body" style="display:none;">'
       + '<button class="we-btn" id="we-export-diag" style="width:100%;margin-bottom:8px;">导出诊断包</button><!-- [FIX] 诊断包：与是否已推演无关，始终可导出 -->'
-      + '<div id="we-debug-render">' + renderDebug() + '</div></div></div>';
+      + '<div id="we-debug-render">' + renderDebug() + '</div>'
+      // [MAP] 引擎预设管理：与 PR#12 只读分段展示同处调试卡，把 4 个硬编码段升级为可编辑+预设化。
+      // 独立锚点 #we-preset-manage，局部刷新；保存走独立 storage key，不进 we-save-settings。
+      + '<div class="we-preset-section">'
+      + '<div class="we-section-title">引擎预设（可编辑推演 prompt 段）</div>'
+      + '<div id="we-preset-manage">' + renderPresetManage() + '</div>'
+      + '</div>'
+      + '</div></div>';
 
     // 各选项卡承载的片段（每个 section 恰好出现一次，零重复）
     const panelContent = {
@@ -1356,6 +1363,225 @@ window.WORLD_ENGINE_UI = (function() {
       };
     }
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // [MAP] 引擎预设管理 UI（与 PR#12 只读分段展示同处调试卡）
+  // 把推演 prompt 的 4 个硬编码段（①引擎角色/②因果10步/⑦JSON输出说明/⑧JSON示例）
+  // 升级为可编辑、可保存、可切换、可导入导出的预设。保存走独立 storage key，
+  // 不进 we-save-settings、不进 world_engine_settings。
+  // ═══════════════════════════════════════════════════════════
+  function getPresetMod() {
+    return (window.WORLD_ENGINE_PRESET && typeof window.WORLD_ENGINE_PRESET.getAllPresets === 'function')
+      ? window.WORLD_ENGINE_PRESET : null;
+  }
+
+  // 生成预设管理 HTML（选择器 + 操作按钮 + 4 段可编辑折叠卡 + 提示）。
+  // 每段 textarea 初值 = 当前生效文本（有覆写用覆写，否则默认硬编码原文）。
+  function renderPresetManage() {
+    const P = getPresetMod();
+    if (!P) return '<div class="we-empty">预设系统未加载</div>';
+
+    const all = P.getAllPresets();
+    const activeId = P.getActivePresetId();
+    const active = P.getActivePreset();
+    const overridden = P.getOverriddenSegKeys();
+    const keys = P.EDITABLE_SEG_KEYS;
+    const labels = P.SEG_LABELS;
+
+    const optHtml = all.map(p =>
+      '<option value="' + h(p.id) + '"' + (p.id === activeId ? ' selected' : '') + '>'
+      + h(p.name) + (p.builtin ? '（内置）' : '') + '</option>').join('');
+
+    const segCards = keys.map(k => {
+      const text = P.getSegmentDisplayText(k) || '';
+      const isOver = overridden.indexOf(k) >= 0;
+      const meta = isOver ? '已自定义' : '默认（未改）';
+      return '<div class="we-prompt-seg-card we-preset-seg-card' + (isOver ? ' we-preset-seg-card-over' : '') + '">'
+        + '<div class="we-prompt-seg-head" data-we-preset-toggle>'
+        + '<span class="we-prompt-seg-arrow">▶</span>'
+        + '<span class="we-prompt-seg-label">' + h(labels[k] || k) + '</span>'
+        + '<span class="we-prompt-seg-meta">' + meta + '</span>'
+        + '</div>'
+        + '<div class="we-prompt-seg-body we-preset-seg-body" style="display:none;">'
+        + '<textarea class="we-preset-textarea" data-we-preset-seg="' + h(k) + '" rows="14" spellcheck="false" placeholder="留空则使用默认硬编码原文">'
+        + h(text) + '</textarea>'
+        + '<div class="we-preset-seg-hint">留空保存后回退默认原文。改 ⑦⑧ 可能导致推演解析失败，自行负责。可保留 {{user}}。</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    const builtinActive = !!(active && active.builtin);
+
+    return '<div class="we-preset-manage">'
+      + '<div class="we-preset-row">'
+      + '<label class="we-preset-select-label">当前预设</label>'
+      + '<select id="we-preset-select" class="we-preset-select">' + optHtml + '</select>'
+      + '</div>'
+      + '<div class="we-preset-active-desc">' + h(active && active.description || '') + '</div>'
+      + '<div class="we-preset-actions">'
+      + '<button class="we-btn we-btn-primary" id="we-preset-save">保存</button>'
+      + '<button class="we-btn" id="we-preset-saveas">另存为</button>'
+      + (builtinActive ? '' : '<button class="we-btn we-btn-danger" id="we-preset-delete">删除</button>')
+      + '<button class="we-btn" id="we-preset-export">导出</button>'
+      + '<button class="we-btn" id="we-preset-import">导入</button>'
+      + '<input type="file" id="we-preset-import-file" accept=".json,application/json" style="display:none;">'
+      + '</div>'
+      + '<div class="we-preset-hint">'
+      + '此处编辑的是「世界推演引擎」发给推演 AI 的 prompt 硬编码段。改了会改变推演行为本身，'
+      + '请自行负责。内置「默认」预设不可删，编辑内置预设点「保存」会提示另存为副本。'
+      + '</div>'
+      + '<div class="we-prompt-seg-list">' + segCards + '</div>'
+      + '</div>';
+  }
+
+  // [FIX] 局部刷新预设管理：只替换 #we-preset-manage 内容并重绑事件，不动其它 tab 输入。
+  function refreshPresetManage() {
+    const box = document.getElementById('we-preset-manage');
+    if (!box) return;
+    box.innerHTML = renderPresetManage();
+    bindPresetEvents(box);
+  }
+
+  // 收集 4 个 textarea 的当前文本 → segments 对象（空串→null 表示回退默认）。
+  function collectPresetSegmentsFromDOM() {
+    const P = getPresetMod();
+    if (!P) return {};
+    const out = {};
+    P.EDITABLE_SEG_KEYS.forEach(k => {
+      const ta = document.querySelector('.we-preset-textarea[data-we-preset-seg="' + cssEscape(k) + '"]');
+      if (!ta) { out[k] = null; return; }
+      const v = ta.value;
+      out[k] = (v == null || v.trim() === '') ? null : v;
+    });
+    return out;
+  }
+
+  // 简单的属性值转义（用于 querySelector 选择器里拼 seg key，key 全是固定小写带连字符，安全兜底）。
+  function cssEscape(s) {
+    return String(s).replace(/["\\]/g, '\\$&');
+  }
+
+  // 绑定预设管理事件（选择器切换 + 保存/另存/删除/导入/导出 + 段折叠委托）。
+  function bindPresetEvents(root) {
+    const P = getPresetMod();
+    if (!P) return;
+    root = root || document.getElementById('we-preset-manage');
+    if (!root) return;
+
+    // 段折叠（事件委托，独立 data-attr，不与 bindPromptSegToggle 的 data-we-seg-toggle 冲突）
+    root.addEventListener('click', function (e) {
+      const head = e.target.closest('[data-we-preset-toggle]');
+      if (!head) return;
+      const card = head.parentElement;
+      const body = card && card.querySelector('.we-preset-seg-body');
+      const arrow = head.querySelector('.we-prompt-seg-arrow');
+      if (!body) return;
+      const isHidden = body.style.display === 'none';
+      body.style.display = isHidden ? 'block' : 'none';
+      if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+    });
+
+    // 切换预设
+    const sel = root.querySelector('#we-preset-select');
+    if (sel) {
+      sel.onchange = () => {
+        const id = sel.value;
+        P.setActivePreset(id);
+        showToast('已切换预设');
+        refreshPresetManage();
+      };
+    }
+
+    // 保存：内置预设 → 提示另存为副本；自定义 → 更新当前。
+    const saveBtn = root.querySelector('#we-preset-save');
+    if (saveBtn) {
+      saveBtn.onclick = () => {
+        const activeId = P.getActivePresetId();
+        const active = P.getActivePreset();
+        const segs = collectPresetSegmentsFromDOM();
+        if (active && active.builtin) {
+          // 内置预设不可覆盖：走另存为副本流程
+          const name = prompt('当前是内置预设，保存会另存为新预设副本。请输入新预设名称：', active.name + ' 副本');
+          if (name == null) return;
+          const np = P.saveAsCustomPreset({ name: name || (active.name + ' 副本'), description: active.description, segments: segs });
+          P.setActivePreset(np.id);
+          showToast('已另存为新预设：' + np.name);
+          refreshPresetManage();
+          return;
+        }
+        P.saveCustomPreset({ id: activeId, name: active.name, description: active.description, segments: segs });
+        showToast('预设已保存');
+        refreshPresetManage();
+      };
+    }
+
+    // 另存为：强制新 id
+    const saveAsBtn = root.querySelector('#we-preset-saveas');
+    if (saveAsBtn) {
+      saveAsBtn.onclick = () => {
+        const active = P.getActivePreset();
+        const segs = collectPresetSegmentsFromDOM();
+        const name = prompt('请输入新预设名称：', active.name + ' 副本');
+        if (name == null) return;
+        const np = P.saveAsCustomPreset({ name: name || (active.name + ' 副本'), description: active.description, segments: segs });
+        P.setActivePreset(np.id);
+        showToast('已另存为新预设：' + np.name);
+        refreshPresetManage();
+      };
+    }
+
+    // 删除：仅自定义
+    const delBtn = root.querySelector('#we-preset-delete');
+    if (delBtn) {
+      delBtn.onclick = () => {
+        const activeId = P.getActivePresetId();
+        const active = P.getActivePreset();
+        if (!active || active.builtin) { showToast('内置预设不可删除', true); return; }
+        if (!confirm('确认删除预设「' + active.name + '」？此操作不可撤销。')) return;
+        P.deleteCustomPreset(activeId);
+        showToast('已删除预设');
+        refreshPresetManage();
+      };
+    }
+
+    // 导出当前预设
+    const expBtn = root.querySelector('#we-preset-export');
+    if (expBtn) {
+      expBtn.onclick = () => {
+        const json = P.exportPreset(P.getActivePresetId());
+        if (!json) { showToast('无预设可导出', true); return; }
+        const name = (P.getActivePreset().name || 'preset').replace(/[\\/:*?"<>|]/g, '_');
+        setupDownload(json, 'world-engine-preset-' + name + '-' + Date.now() + '.json');
+        showToast('预设已导出');
+      };
+    }
+
+    // 导入：触发文件选择
+    const impBtn = root.querySelector('#we-preset-import');
+    const impFile = root.querySelector('#we-preset-import-file');
+    if (impBtn && impFile) {
+      impBtn.onclick = () => impFile.click();
+      impFile.onchange = () => {
+        const f = impFile.files && impFile.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const np = P.importPreset(String(reader.result || ''));
+            showToast('已导入预设：' + np.name);
+            refreshPresetManage();
+          } catch (e) {
+            showToast('导入失败: ' + (e && e.message || e), true);
+          }
+        };
+        reader.onerror = () => showToast('读取文件失败', true);
+        reader.readAsText(f, 'utf-8');
+        // 清空 value 以便重复选同一文件
+        impFile.value = '';
+      };
+    }
+  }
+
 
   // [FIX] renderDebug：推演 prompt 全透明分段展示（只读，不改可编辑）。
   // 把推演 API 收到的整块 prompt 按 10 段拆开折叠展示 + AI 返回 JSON 高亮，只看最新一轮。
@@ -2304,7 +2530,7 @@ window.WORLD_ENGINE_UI = (function() {
         document.querySelectorAll('.we-settings-panel').forEach(p =>
           p.style.display = (p.dataset.tab === key) ? '' : 'none');
         // [FIX] 切到调试 tab 时，局部刷新 renderDebug 拉最新一轮推演数据（不动其它 tab 输入）
-        if (key === 'debug') refreshDebugRender();
+        if (key === 'debug') { refreshDebugRender(); refreshPresetManage(); }
       };
     });
 
@@ -2624,7 +2850,7 @@ window.WORLD_ENGINE_UI = (function() {
           const isHidden = body.style.display === 'none';
           body.style.display = isHidden ? 'block' : 'none';
           if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
-          if (!isHidden) refreshDebugRender(); // [FIX] 局部刷新调试卡数据，不动其它 tab 输入
+          if (!isHidden) { refreshDebugRender(); refreshPresetManage(); } // [FIX] 局部刷新调试卡数据，不动其它 tab 输入
         }
       };
     }
@@ -3005,6 +3231,9 @@ window.WORLD_ENGINE_UI = (function() {
         }
       };
     }
+
+    // [MAP] 引擎预设管理：整页装配后首次绑定（事件委托在 bindPresetEvents 内）。
+    bindPresetEvents(document.getElementById('we-preset-manage'));
   }
 
   function showPanel() {
