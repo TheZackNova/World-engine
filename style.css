@@ -3118,16 +3118,18 @@
 
 /* ============================================================
    Tối ưu hiển thị tiếng Việt (font + giãn cách + layout)
-   - Dùng serif hỗ trợ đầy đủ dấu tiếng Việt (Georgia/Cambria/Times)
-     thay cho serif tiếng Trung (SimSun/Songti) vốn fallback từng
-     glyph khiến dấu bị lệch baseline.
-   - Giảm letter-spacing rộng (thiết kế cho chữ Hán vuông) để chữ
-     Việt liền mạch, dễ đọc.
+   - Dùng serif hỗ trợ đầy đủ dấu tiếng Việt (Cambria/Constantia/Times)
+     thay cho serif tiếng Trung (SimSun/Songti) và Georgia (thiếu glyph
+     chữ 2 dấu) vốn khiến dấu sắc/huyền bị đẩy lệch.
+   - Đặt letter-spacing 'normal' để dấu thanh không bị tách khỏi chữ nền.
    - Sửa các phần có chiều rộng cố định theo 2 ký tự Hán bị vỡ với
      từ tiếng Việt dài hơn.
    ============================================================ */
 :root {
-  --we-vn-font: Georgia, Cambria, "Times New Roman", "Noto Serif", "Be Vietnam Pro",
+  /* Serif hỗ trợ tiếng Việt đầy đủ (có glyph dựng sẵn cho chữ 2 dấu ế/ắ/ố…).
+     Cambria/Constantia (Windows) render dấu sắc/huyền đúng vị trí; tránh Georgia
+     vốn thiếu glyph khiến trình duyệt fallback và đẩy dấu lệch sang phải. */
+  --we-vn-font: Cambria, Constantia, "Noto Serif", "Times New Roman", "Be Vietnam Pro",
                 "Songti SC", "SimSun", "STSong", serif;
 }
 
@@ -3138,13 +3140,16 @@
   font-family: var(--we-vn-font) !important;
 }
 
-/* Giảm letter-spacing trên mọi phần tử chữ trong panel (chữ Việt liền mạch) */
+/* Đặt letter-spacing về 'normal' trên mọi phần tử chữ trong panel.
+   Quan trọng: giãn cách > 0 sẽ chèn khoảng trống giữa chữ nền và dấu thanh khi
+   trình duyệt phải fallback glyph → dấu sắc/huyền bị đẩy lệch. Để 'normal' đảm
+   bảo dấu tiếng Việt luôn nằm đúng vị trí. */
 #we-panel [class^="we-"],
 #we-panel [class*=" we-"] {
-  letter-spacing: 0.2px !important;
+  letter-spacing: normal !important;
 }
 
-/* Thương hiệu giữ một chút giãn cách cho thanh thoát */
+/* Thương hiệu giữ một chút giãn cách cho thanh thoát (chỉ chữ Latin, không dấu) */
 #we-panel .we-panel-title { letter-spacing: 1px !important; }
 
 /* Nhãn điều hướng: trước đây cố định 48px + 20px (vừa 2 chữ Hán) →
