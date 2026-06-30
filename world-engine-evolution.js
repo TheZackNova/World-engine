@@ -300,10 +300,10 @@ type：${picked.type}
       // API 没返回 → 设置重试标记，下轮继续
       state.regionalIncident = {
         active: false,
-        title: '区域突发事件生成失败（将在下一轮重试）',
+        title: 'Tạo sự kiện khu vực thất bại (sẽ thử lại ở vòng sau)',
         type: incident.type || 'other',
-        scope: '未知区域',
-        impact: '本地骰子触发区域突发事件，但 API 未返回 regionalIncident。下一轮将重试同类型。',
+        scope: 'Khu vực không rõ',
+        impact: 'Xúc xắc cục bộ đã kích hoạt sự kiện khu vực, nhưng API không trả về regionalIncident. Vòng sau sẽ thử lại cùng loại.',
         duration: 0,
         cooldown: 0,
         _retry: true,
