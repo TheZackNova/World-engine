@@ -1,131 +1,131 @@
 # 世界引擎 World Engine
 
-SillyTavern 第三方扩展 — 独立 API 驱动的世界推演引擎。
+Tiện ích mở rộng bên thứ ba cho SillyTavern — engine diễn tiến thế giới chạy bằng API độc lập.
 
-对话后自动推演世界状态、注入上下文到 prompt，让 AI 角色扮演中的世界真正"活"起来：NPC 有自己的生活，事件链自行推进，势力兴衰更替，风声四起，经济波动——一切不以玩家为中心。
+Sau mỗi lượt hội thoại, tiện ích tự động diễn tiến trạng thái thế giới và tiêm ngữ cảnh vào prompt, giúp thế giới trong lúc nhập vai thực sự "sống": NPC có cuộc sống riêng, chuỗi sự kiện tự diễn tiến, các thế lực hưng suy thay đổi, tin đồn lan khắp nơi, kinh tế biến động — tất cả không xoay quanh người chơi.
 
-## 功能概览
+## Tổng quan tính năng
 
-**世界推演**
-- 每轮对话后自动（或手动）调用外部 OpenAI 兼容 API 推演世界变化
-- 支持「每 N 轮推演」和「按故事内时间推演」两种节奏模式
-- 推演结果自动注入 prompt，AI 正文写作时能感知世界动态
+**Diễn tiến thế giới**
+- Sau mỗi lượt hội thoại tự động (hoặc thủ công) gọi API tương thích OpenAI bên ngoài để diễn tiến biến đổi của thế giới
+- Hỗ trợ hai chế độ nhịp: «diễn tiến mỗi N vòng» và «diễn tiến theo thời gian trong truyện»
+- Kết quả diễn tiến tự động tiêm vào prompt, để AI cảm nhận được động thái thế giới khi viết nội dung chính
 
-**活体引擎规则**（内置 12 模块）
-- 世界运转、事件链、风声传播、势力体系、声誉系统、经济系统、暗箱操作、区域突发事件等
-- 骰子驱动的事件阶段推进（萌芽→发酵→逼近→爆发/消散）
-- 势力权柱、凝聚力、运势的自然波动
+**Bộ quy tắc engine sống** (12 mô-đun tích hợp)
+- Vận hành thế giới, chuỗi sự kiện, lan truyền tin đồn, hệ thống thế lực, hệ thống danh tiếng, hệ thống kinh tế, thao túng hậu trường, sự kiện đột phát khu vực, v.v.
+- Tiến triển giai đoạn sự kiện do xúc xắc điều khiển (Manh nha → Lên men → Cận kề → Bùng phát/Tan biến)
+- Dao động tự nhiên của trụ cột quyền lực, độ gắn kết và vận thế các thế lực
 
-**世界状态面板**
-- 世界摘要 / 天下大势 / 区域突发 / 事件链 / 风声 / 影响链 / 声誉 / 势力 / 宿敌 / 经济 / 暗箱
-- 每个模块可折叠，支持内联编辑、新增、删除
-- 存档点（推演前快照）与当前状态的 a/b 双态显示
+**Bảng trạng thái thế giới**
+- Tóm tắt thế giới / Đại thế thiên hạ / Sự kiện khu vực / Chuỗi sự kiện / Tin đồn / Chuỗi tác động / Danh tiếng / Thế lực / Thù địch / Kinh tế / Hộp đen
+- Mỗi mô-đun có thể thu gọn, hỗ trợ chỉnh sửa tại chỗ, thêm mới, xóa
+- Hiển thị song trạng thái a/b giữa điểm lưu (ảnh chụp trước khi diễn tiến) và trạng thái hiện tại
 
-**酒馆缓存与存档**（v2.2.0）
-- 跨设备实时同步：将世界状态镜像进 `chat_metadata`，随聊天文件保存到酒馆服务器
-- 命名存档 + 滚动自动备份：防丢失，支持恢复/重命名/导出/导入/删除
-- Lamport 计数器冲突解决，空内容护栏防止空设备覆盖真实数据
-- 默认关闭，不打开则完全不写聊天文件
+**Bộ nhớ đệm & lưu trữ Tavern** (v2.2.0)
+- Đồng bộ thời gian thực xuyên thiết bị: phản chiếu trạng thái thế giới vào `chat_metadata`, lưu cùng tệp chat lên máy chủ Tavern
+- Bản lưu đặt tên + tự sao lưu cuốn chiếu: phòng mất dữ liệu, hỗ trợ khôi phục/đổi tên/xuất/nhập/xóa
+- Giải quyết xung đột bằng bộ đếm Lamport, lá chắn nội dung trống ngăn thiết bị rỗng ghi đè dữ liệu thật
+- Mặc định tắt; nếu không bật thì hoàn toàn không ghi vào tệp chat
 
-**后台推演世界书**
-- 按聊天选择世界书条目参与推演，让推演结果贴合具体世界观设定
-- 蓝绿灯触发（v2.3.0）：🔵 常驻条目恒注入、🟢 关键词条目命中近期对话才注入，跟随酒馆世界书配置，每条可单独覆写（默认关闭）
+**World book cho diễn tiến nền**
+- Chọn các mục world book tham gia diễn tiến theo từng cuộc trò chuyện, để kết quả diễn tiến bám sát thiết định thế giới quan cụ thể
+- Kích hoạt đèn xanh-lam (v2.3.0): 🔵 mục thường trú luôn được tiêm, 🟢 mục từ khóa chỉ tiêm khi trúng từ khóa trong hội thoại gần đây, theo cấu hình world book của Tavern, mỗi mục có thể ghi đè riêng (mặc định tắt)
 
-**批量重填世界推演**（v2.3.1）
-- 从第 1 个 AI 楼层开始，分批把世界状态重新推演到指定楼层（例：30 个 AI 楼层、每 5 层一批 → 调用 6 次推演）
-- 每批仅喂本批楼层的对话，token 恒定可控；世界状态逐批累积、保持连贯
-- 可配置每批层数、结束楼层、每批独立重试次数；清空重来前自动存一份备份快照
+**Điền lại hàng loạt diễn tiến thế giới** (v2.3.1)
+- Bắt đầu từ tầng AI thứ 1, chia lô diễn tiến lại trạng thái thế giới tới tầng chỉ định (ví dụ: 30 tầng AI, mỗi 5 tầng một lô → gọi diễn tiến 6 lần)
+- Mỗi lô chỉ đưa hội thoại của các tầng trong lô đó, token ổn định kiểm soát được; trạng thái thế giới tích lũy dần qua từng lô, giữ tính liền mạch
+- Có thể cấu hình số tầng mỗi lô, tầng kết thúc, số lần thử lại riêng cho mỗi lô; trước khi xóa làm lại sẽ tự lưu một ảnh chụp sao lưu
 
-**数据导入/导出**
-- JSON 格式导出完整世界状态，可跨聊天导入
-- 导入时自动归一化楼层数，避免判定错乱
+**Nhập/Xuất dữ liệu**
+- Xuất toàn bộ trạng thái thế giới ở định dạng JSON, có thể nhập sang cuộc trò chuyện khác
+- Khi nhập tự động chuẩn hóa số tầng, tránh phán định sai lệch
 
-## 安装
+## Cài đặt
 
-### 方式一：通过 SillyTavern 扩展管理器
+### Cách 1: Qua trình quản lý tiện ích của SillyTavern
 
-1. 打开 SillyTavern，进入 **扩展** 页面
-2. 点击 **安装扩展**
-3. 输入仓库地址：`https://github.com/DlSNlGHT/World`
-4. 安装完成后刷新页面
+1. Mở SillyTavern, vào trang **Extensions**
+2. Bấm **Install extension**
+3. Nhập địa chỉ kho: `https://github.com/DlSNlGHT/World`
+4. Cài xong thì làm mới trang
 
-### 方式二：手动安装
+### Cách 2: Cài thủ công
 
 ```bash
-cd <SillyTavern安装目录>/data/default-user/extensions
+cd <thư-mục-cài-SillyTavern>/data/default-user/extensions
 git clone https://github.com/DlSNlGHT/World world-engine
 ```
 
-刷新 SillyTavern 页面即可。
+Làm mới trang SillyTavern là xong.
 
-## 配置
+## Cấu hình
 
-安装后在 SillyTavern 侧边栏找到 **世界引擎** 扩展面板，进入 **设置** 页：
+Sau khi cài, tìm bảng tiện ích **World Engine** ở thanh bên SillyTavern, vào trang **Cài đặt**:
 
-1. **API 配置**（必填）
-   - API URL：任意 OpenAI 兼容端点（如 `https://api.openai.com/v1`）
-   - API Key：对应的密钥
-   - 模型名称：如 `gpt-4o`、`claude-3-5-sonnet` 等
+1. **Cấu hình API** (bắt buộc)
+   - API URL: bất kỳ endpoint tương thích OpenAI (ví dụ `https://api.openai.com/v1`)
+   - API Key: khóa tương ứng
+   - Tên mô hình: ví dụ `gpt-4o`, `claude-3-5-sonnet`, v.v.
 
-2. **推演模式**
-   - 自动：每 N 轮对话后自动推演（默认每轮）
-   - 按时间：根据故事内经过的时间决定推演轮数
-   - 手动：仅点击「手动推演」按钮时触发
+2. **Chế độ diễn tiến**
+   - Tự động: tự diễn tiến sau mỗi N vòng hội thoại (mặc định mỗi vòng)
+   - Theo thời gian: quyết định số vòng diễn tiến dựa trên thời gian đã trôi qua trong truyện
+   - Thủ công: chỉ kích hoạt khi bấm nút «Diễn tiến thủ công»
 
-3. **批量重填世界推演**（可选）
-   - 从第 1 个 AI 楼层分批把世界推到指定楼层，用于：装扩展前已有大量对话、或想推倒重来
-   - 每批 AI 楼层数：每多少层调一次推演；结束楼层：填 0 = 推到最后；每批重试次数：失败重试上限
-   - 点「▶ 开始重填世界推演」→ 确认（会清空当前世界状态、自动存备份快照）→ 逐批推进，可随时「■ 停止」
+3. **Điền lại hàng loạt diễn tiến thế giới** (tùy chọn)
+   - Chia lô diễn tiến thế giới từ tầng AI thứ 1 tới tầng chỉ định, dùng khi: đã có nhiều hội thoại trước khi cài tiện ích, hoặc muốn làm lại từ đầu
+   - Số tầng AI mỗi lô: bao nhiêu tầng gọi diễn tiến một lần; Tầng kết thúc: điền 0 = diễn tiến tới cuối; Số lần thử lại mỗi lô: giới hạn thử lại khi thất bại
+   - Bấm «▶ Bắt đầu điền lại diễn tiến thế giới» → xác nhận (sẽ xóa trạng thái thế giới hiện tại, tự lưu ảnh chụp sao lưu) → diễn tiến theo từng lô, có thể «■ Dừng» bất cứ lúc nào
 
-4. **酒馆缓存与存档**（可选）
-   - 跨设备实时同步：开启后世界状态随聊天跨设备同步
-   - 自动滚动备份：每当轮次推进自动存一条，保留最近 3 条
+4. **Bộ nhớ đệm & lưu trữ Tavern** (tùy chọn)
+   - Đồng bộ thời gian thực xuyên thiết bị: bật rồi thì trạng thái thế giới đồng bộ giữa các thiết bị theo cuộc trò chuyện
+   - Tự sao lưu cuốn chiếu: mỗi khi tiến vòng tự lưu một bản, giữ 3 bản gần nhất
 
-## 使用
+## Sử dụng
 
-1. 配置好 API 后，正常与角色对话
-2. AI 回复后，世界引擎自动推演并更新面板
-3. 点击面板标题栏展开/折叠各模块查看世界全貌
-4. 推演结果自动注入 prompt，AI 下一轮回复会感知世界变化
+1. Sau khi cấu hình API, trò chuyện bình thường với nhân vật
+2. Sau khi AI trả lời, World Engine tự diễn tiến và cập nhật bảng
+3. Bấm thanh tiêu đề bảng để mở/thu gọn từng mô-đun xem toàn cảnh thế giới
+4. Kết quả diễn tiến tự động tiêm vào prompt, lượt trả lời tiếp theo của AI sẽ cảm nhận được biến đổi của thế giới
 
-**面板分页**：世界摘要 / 天下大势 / 事件链 / 风声 / 势力 / 声誉 / 经济 / 暗箱 / 存档点 / 设置
+**Phân trang bảng**: Tóm tắt thế giới / Đại thế thiên hạ / Chuỗi sự kiện / Tin đồn / Thế lực / Danh tiếng / Kinh tế / Hộp đen / Điểm lưu / Cài đặt
 
-**存档与恢复**：
-- 设置页「酒馆缓存与存档」区可新建命名存档、导入外部存档
-- 每条存档支持恢复（回到该时刻状态）、重命名、导出 JSON、删除
-- 恢复前自动生成一条备份，可随时恢复回来
+**Lưu trữ & khôi phục**:
+- Trong mục «Bộ nhớ đệm & lưu trữ Tavern» ở trang Cài đặt, có thể tạo bản lưu đặt tên, nhập bản lưu bên ngoài
+- Mỗi bản lưu hỗ trợ khôi phục (về trạng thái thời điểm đó), đổi tên, xuất JSON, xóa
+- Trước khi khôi phục tự tạo một bản sao lưu, có thể khôi phục lại bất cứ lúc nào
 
-## 项目结构
+## Cấu trúc dự án
 
 ```
-world-engine.js           主入口：模块加载、事件绑定、注入逻辑
-world-engine-core.js      核心数据结构与存储（按聊天 ID 隔离）
-world-engine-store.js     存储中间层（IndexedDB + localStorage 回退）
-world-engine-api.js       独立 API 调用（OpenAI 兼容格式）
-world-engine-evolution.js 世界推演（活体引擎规则 + 骰子系统）
-world-engine-inject.js    构建注入上下文（条件筛选关键信息）
-world-engine-rules-loader.js  内置全部推演规则（12 模块）
-world-engine-ledger.js    重大事件账本（记录 Lv3/4 变化）
-world-engine-worldbook.js 后台推演世界书选择
-world-engine-chatcache.js 酒馆缓存与存档（跨设备同步）
-world-engine-ui.js        完整 UI 面板
-style.css                 样式
-manifest.json             SillyTavern 扩展清单
-worldmap.svg              世界地图素材
+world-engine.js           Điểm vào chính: nạp mô-đun, gắn sự kiện, logic tiêm
+world-engine-core.js      Cấu trúc dữ liệu lõi & lưu trữ (cô lập theo ID cuộc trò chuyện)
+world-engine-store.js     Tầng trung gian lưu trữ (IndexedDB + dự phòng localStorage)
+world-engine-api.js       Gọi API độc lập (định dạng tương thích OpenAI)
+world-engine-evolution.js Diễn tiến thế giới (bộ quy tắc engine sống + hệ thống xúc xắc)
+world-engine-inject.js    Dựng ngữ cảnh tiêm (lọc thông tin then chốt theo điều kiện)
+world-engine-rules-loader.js  Toàn bộ quy tắc diễn tiến tích hợp (12 mô-đun)
+world-engine-ledger.js    Sổ sự kiện trọng đại (ghi biến đổi Lv3/4)
+world-engine-worldbook.js Chọn world book cho diễn tiến nền
+world-engine-chatcache.js Bộ nhớ đệm & lưu trữ Tavern (đồng bộ xuyên thiết bị)
+world-engine-ui.js        Bảng UI hoàn chỉnh
+style.css                 Kiểu dáng
+manifest.json             Bản kê khai tiện ích SillyTavern
+worldmap.svg              Tài nguyên bản đồ thế giới
 ```
 
-## 技术要点
+## Điểm kỹ thuật
 
-- **纯前端扩展**：10 个 JS 模块，IIFE 挂载到 `window.*` 全局变量，无构建系统
-- **本地骰子 + 外部 API 双驱动**：事件阶段推进用本地 RNG，叙事生成用外部 LLM
-- **按聊天隔离**：每个聊天独立存档，互不干扰
-- **a/b 双态**：推演前存档点（checkpoint）+ 推演后当前状态，支持重 roll 时注入正确版本
-- **安全边界**：API Key 等敏感设置绝不写入 `chat_metadata`，防止聊天文件分享导致泄露
+- **Tiện ích thuần front-end**: 10 mô-đun JS, IIFE gắn vào biến toàn cục `window.*`, không có hệ thống build
+- **Hai động cơ kép xúc xắc cục bộ + API ngoài**: tiến triển giai đoạn sự kiện dùng RNG cục bộ, sinh tự sự dùng LLM bên ngoài
+- **Cô lập theo cuộc trò chuyện**: mỗi cuộc trò chuyện có bản lưu riêng, không ảnh hưởng lẫn nhau
+- **Song trạng thái a/b**: điểm lưu trước diễn tiến (checkpoint) + trạng thái hiện tại sau diễn tiến, hỗ trợ tiêm đúng phiên bản khi re-roll
+- **Ranh giới an toàn**: các thiết lập nhạy cảm như API Key tuyệt đối không ghi vào `chat_metadata`, tránh rò rỉ khi chia sẻ tệp chat
 
-## 许可证
+## Giấy phép
 
 [MIT](https://opensource.org/licenses/MIT)
 
-## 作者
+## Tác giả
 
 [Disnight](https://github.com/DlSNlGHT)
