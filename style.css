@@ -3116,4 +3116,58 @@
   font-size: 10px; color: var(--we-text3); margin-top: 4px; line-height: 1.5;
 }
 
+/* ============================================================
+   Tối ưu hiển thị tiếng Việt (font + giãn cách + layout)
+   - Dùng serif hỗ trợ đầy đủ dấu tiếng Việt (Georgia/Cambria/Times)
+     thay cho serif tiếng Trung (SimSun/Songti) vốn fallback từng
+     glyph khiến dấu bị lệch baseline.
+   - Giảm letter-spacing rộng (thiết kế cho chữ Hán vuông) để chữ
+     Việt liền mạch, dễ đọc.
+   - Sửa các phần có chiều rộng cố định theo 2 ký tự Hán bị vỡ với
+     từ tiếng Việt dài hơn.
+   ============================================================ */
+:root {
+  --we-vn-font: Georgia, Cambria, "Times New Roman", "Noto Serif", "Be Vietnam Pro",
+                "Songti SC", "SimSun", "STSong", serif;
+}
+
+/* Áp font hỗ trợ tiếng Việt cho toàn panel.
+   Loại trừ: icon Font Awesome (<i>, .fa-*) và vùng mã monospace. */
+#we-panel,
+#we-panel :not(i):not([class*="fa-"]):not(pre):not(code):not(textarea):not(.we-prompt-seg-pre):not(.we-prompt-seg-meta) {
+  font-family: var(--we-vn-font) !important;
+}
+
+/* Giảm letter-spacing trên mọi phần tử chữ trong panel (chữ Việt liền mạch) */
+#we-panel [class^="we-"],
+#we-panel [class*=" we-"] {
+  letter-spacing: 0.2px !important;
+}
+
+/* Thương hiệu giữ một chút giãn cách cho thanh thoát */
+#we-panel .we-panel-title { letter-spacing: 1px !important; }
+
+/* Nhãn điều hướng: trước đây cố định 48px + 20px (vừa 2 chữ Hán) →
+   từ tiếng Việt dài bị xuống dòng. Nới rộng + thu cỡ + không ngắt dòng,
+   giữ chiều rộng cố định để đường timeline thẳng hàng. */
+#we-panel .we-nav-label {
+  width: 76px !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+/* Nhãn nguồn áp lực (lưới 4 cột) & bậc ổn định: không ngắt dòng / nới dòng */
+#we-panel .we-core-stat-k { white-space: nowrap; }
+#we-panel .we-core-tier { line-height: 1.35; }
+#we-panel .we-core-title { line-height: 1.25; }
+
+/* Câu tâm trạng ở header & câu thơ điều hướng có thể dài hơn → cho xuống dòng gọn */
+#we-panel .we-header-mood-text { line-height: 1.35; }
+
+/* Tăng nhẹ độ thoáng dòng cho khối văn bản dài (dấu tiếng Việt chồng tầng) */
+#we-panel .we-digest,
+#we-panel .we-nav-sub,
+#we-panel .we-section-title { line-height: 1.55; }
+
 
