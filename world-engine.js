@@ -326,7 +326,7 @@
           const delta = currentDay - base;
           if (delta < threshold) {
             lastProcessedMessageKey = currentKey;
-            setStatus(`第 ${Math.max(0, delta)}/${threshold} 天，未到推演`);
+            setStatus(`${Math.max(0, delta)}/${threshold} ngày, chưa tới lượt diễn tiến`);
             if (ui) ui.refresh(true);
             return;
           }
@@ -361,7 +361,7 @@
           if (!doEvolve) {
             lastProcessedMessageKey = currentKey;
             const pos = c % everyX || (c === 0 ? 0 : everyX);
-            setStatus(`第 ${pos}/${everyX} 轮，未到推演`);
+            setStatus(`Vòng ${pos}/${everyX}, chưa tới lượt diễn tiến`);
             if (ui) ui.refresh(true);
             return;
           }
@@ -444,7 +444,7 @@
         const threshold = Math.max(1, parseInt(settings.evolveTimeThreshold) || 1);
         const delta = Number(currentDay) - base;
         if (delta < threshold) {
-          setStatus(`第 ${Math.max(0, delta)}/${threshold} 天，未到推演`);
+          setStatus(`${Math.max(0, delta)}/${threshold} ngày, chưa tới lượt diễn tiến`);
           if (ui) ui.refresh(true);
           return;
         }

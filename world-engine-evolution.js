@@ -300,10 +300,10 @@ type：${picked.type}
       // API 没返回 → 设置重试标记，下轮继续
       state.regionalIncident = {
         active: false,
-        title: '区域突发事件生成失败（将在下一轮重试）',
+        title: 'Tạo sự kiện khu vực thất bại (sẽ thử lại ở vòng sau)',
         type: incident.type || 'other',
-        scope: '未知区域',
-        impact: '本地骰子触发区域突发事件，但 API 未返回 regionalIncident。下一轮将重试同类型。',
+        scope: 'Khu vực không rõ',
+        impact: 'Xúc xắc cục bộ đã kích hoạt sự kiện khu vực, nhưng API không trả về regionalIncident. Vòng sau sẽ thử lại cùng loại.',
         duration: 0,
         cooldown: 0,
         _retry: true,
@@ -617,6 +617,13 @@ type：${picked.type}
   // callEvolutionAPI 内不再重新定义，直接引用此处；覆写层用 Final 变量区分默认值与用户覆写。
   const DEFAULT_SEG_ENGINE_ROLE = `你是一个世界推演引擎。每轮对话后，后台世界必须自动向前推进一步。\n请根据世界规则和本轮对话，更新世界状态。只输出 JSON，不要有其他文字。`;
 
+  // [越南语输出] 语言指令：强制 JSON 中所有自然语言文本值用越南语书写，字段名(key)与枚举值保持不变。
+  // 无条件追加到 prompt 末尾（最高 recency），不受预设覆写影响，不改动 4 段「单一真相源」。
+  const LANG_DIRECTIVE = `========== YÊU CẦU NGÔN NGỮ ĐẦU RA (ƯU TIÊN CAO NHẤT) ==========\n`
+    + `Toàn bộ GIÁ TRỊ văn bản ngôn ngữ tự nhiên trong JSON (ví dụ: title, content, desc, name, scope, impact, currentGoal, world_digest, và mọi chuỗi mô tả khác) BẮT BUỘC phải được viết bằng TIẾNG VIỆT.\n`
+    + `Giữ NGUYÊN không dịch: tên trường JSON (key) và các giá trị liệt kê cố định (enum) như type, status, relation, stage... (ví dụ "report", "conflict", "active").\n`
+    + `Không xuất bất kỳ văn bản nào ngoài JSON. Quy tắc thế giới có thể bằng tiếng Trung, nhưng nội dung bạn TRẢ VỀ phải bằng tiếng Việt.`;
+
   const DEFAULT_SEG_CAUSAL_STEPS = `推演时按以下因果顺序检查：\n1. 【私密判定·最先执行】先判定本轮 {{user}} 及相关人物的行为有无目击者、是否留下可追溯痕迹。凡在无目击、未留痕迹的情况下发生的私密行为（独处、私密情爱、闺房之事、密室密谈、隐秘潜入、无人时的杀伐等），一律计入 blackbox.secretActions（witnesses 标"无"或"仅XX"），并且：不得据此生成风声、不得改变任何维度声誉、不得形成或推进事件链、不得让任何不在场 NPC 据此行动。只有当该行为被目击、留下可追溯痕迹、或事后确实被传播后，才可转为公开影响。\n2. 将所有持续中的天下大势作为本轮世界级约束，并检查是否形成新大势或已有大势明确结束。\n3. 判断本轮事实、行动与公开信息是否形成新风声（私密行为除外，见第1步）。\n4. 检查已有风声是否获得新的合法传播节点，并据此更新 level/scope/content/source。\n5. 判断风声实际覆盖了哪些势力、圈层或行动者；只有被覆盖者才能据此改变判断与行动。\n6. 天下大势或风声造成跨系统变化时，在对应状态字段中落实结果，并用 influenceChain 记录传导过程。\n7. 声誉判定：只有当 {{user}} 的行为已形成覆盖对应圈层的风声后，才改动对应维度声誉；私密、未传播或仅单人目击的行为不改变群体声誉。\n8. 仇敌判定：判断本轮是否产生触发血仇/恩怨的不可逆伤害；已有仇敌只有通过覆盖其情报来源的风声或其他合法渠道获知线索后，才能推进追踪，且受势力等级约束，不得凭空定位 {{user}}。\n9. 经济判定：只有事件链或可追溯的外部原因驱动时才更新 climate 与 signals；重大经济变化须生成对应风声，禁止凭空波动。\n10. 不得从面板全知信息直接跳到 NPC 行动，不得为了产生联动而虚构传播节点。`;
 
   async function callEvolutionAPI(state, userMsg, aiMsg, extraInstruction = '', dialogueText = '') {
@@ -670,7 +677,8 @@ type：${picked.type}
       + '\n\n' + segDialogue
       + '\n\n' + segOutputInstructions
       + '\n' + segJsonExample
-      + '\n' + (extraInstruction ? '\n' + extraInstruction : '') + toneSection;
+      + '\n' + (extraInstruction ? '\n' + extraInstruction : '') + toneSection
+      + '\n\n' + LANG_DIRECTIVE;
 
     // [MAP] 分段镜像（全透明展示用，只读）。各段 content 与上方 prompt 引用同一变量。
     // worldbookSection / toneSection / extraInstruction 为空时 content 为空字符串，展示侧标注「本轮未启用」。
@@ -684,7 +692,8 @@ type：${picked.type}
       { key: 'output-format',  label: '⑦ JSON 输出字段说明',       content: segOutputInstructions },
       { key: 'json-example',   label: '⑧ JSON 示例',               content: segJsonExample },
       { key: 'extra-instr',    label: '⑨ 附加指令',                content: segExtraInstruction },
-      { key: 'tone',           label: '⑩ 附加提示词（用户自定义）', content: segToneSection }
+      { key: 'tone',           label: '⑩ 附加提示词（用户自定义）', content: segToneSection },
+      { key: 'lang',           label: '⑪ 输出语言要求（越南语）',   content: LANG_DIRECTIVE }
     ];
 
     const rawResult = await api.callApi(prompt, 8000, 0.7, _abortController.signal);

@@ -174,12 +174,12 @@ window.WORLD_ENGINE_INJECT_INSPECTOR = (function() {
 
   // 状态码 → 大白话（UI 与 diag 共用，单一真相源）。
   const STATUS_TEXT = {
-    NOT_YET: '尚未生成，暂无注入记录',
-    SKIPPED_DISABLED: '本轮未注入：注入正文已关闭（插头/设置）',
-    SKIPPED_REROLL: '本轮按设计未注入：同层重 roll（swipe/重新生成）',
-    SKIPPED_OTHER: '本轮未注入：尚未触发推演或无世界状态',
-    SUCCESS: '✅ 本轮世界状态已进入正文',
-    MISSING: '❌ 已注册却没进最终 prompt——这才是真正的注入失败（疑被其它扩展清除/深度越界）',
+    NOT_YET: 'Chưa sinh, chưa có bản ghi tiêm',
+    SKIPPED_DISABLED: 'Vòng này không tiêm: đã tắt tiêm vào nội dung (phích cắm/cài đặt)',
+    SKIPPED_REROLL: 'Vòng này cố ý không tiêm: re-roll cùng tầng (swipe/tạo lại)',
+    SKIPPED_OTHER: 'Vòng này không tiêm: chưa kích hoạt diễn tiến hoặc không có trạng thái thế giới',
+    SUCCESS: '✅ Trạng thái thế giới vòng này đã vào nội dung',
+    MISSING: '❌ Đã đăng ký nhưng không vào prompt cuối — đây mới là tiêm thất bại thật (nghi bị tiện ích khác xóa/vượt độ sâu)',
   };
   function statusText(status) { return STATUS_TEXT[status] || STATUS_TEXT.NOT_YET; }
 

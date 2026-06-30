@@ -22,7 +22,7 @@ window.WORLD_ENGINE_CORE = (function() {
   function getDefaultState() {
     return {
       round: 0,
-      worldDigest: '世界正在苏醒，一切尚未可知。',
+      worldDigest: 'Thế giới đang thức tỉnh, mọi thứ còn chưa rõ.',
       events: [],
       factions: [],
       winds: [],
