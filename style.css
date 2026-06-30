@@ -1673,10 +1673,8 @@
 
 /* ===== 影响链 ===== */
 .we-influence-step {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 8px;
-  padding: 5px 0;
+  display: block;
+  padding: 6px 0;
   line-height: 1.55;
 }
 
@@ -1685,9 +1683,10 @@
 }
 
 .we-influence-label {
-  align-self: start;
+  display: inline-block;
+  margin-bottom: 4px;
   border-radius: 3px;
-  padding: 1px 5px;
+  padding: 1px 6px;
   text-align: center;
   font-size: 10px;
   font-weight: 700;
@@ -1695,6 +1694,7 @@
 }
 
 .we-influence-text {
+  display: block;
   min-width: 0;
   color: var(--we-text2);
   font-size: 12px;

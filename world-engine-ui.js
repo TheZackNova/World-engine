@@ -1067,10 +1067,10 @@ window.WORLD_ENGINE_UI = (function() {
     const dimLabels = { authority:'Triều đình', common:'Thị tỉnh', shadow:'Thảo mãng', circuit:'Đồng đạo' };
     // 各维度 × 各等级的随附古文（出处略）
     const quotes = {
-      authority: { '天怒人怨':'上下疾之如仇', '声名狼藉':'在位皆言其恶', '默默无闻':'沉于下寮不见知', '受人尊敬':'群臣莫不敬惮', '万众敬仰':'天下想望其风采' },
-      common:    { '天怒人怨':'行人指目相戒', '声名狼藉':'里中无赖子亦耻之', '默默无闻':'出入市廛人莫识', '受人尊敬':'闾里称其长者', '万众敬仰':'儿童走卒皆知其名' },
-      shadow:    { '天怒人怨':'绿林亦不肯纳', '声名狼藉':'豪杰闻而鄙之', '默默无闻':'混迹渔樵无人问', '受人尊敬':'江湖豪杰多归之', '万众敬仰':'四海之内皆称其侠' },
-      circuit:   { '天怒人怨':'同辈羞与为伍', '声名狼藉':'友朋面斥其非', '默默无闻':'独行无人与语', '受人尊敬':'同门推为领袖', '万众敬仰':'吾辈望之如泰山' }
+      authority: { '天怒人怨':'Trên dưới căm như kẻ thù', '声名狼藉':'Người tại vị đều chê bai', '默默无闻':'Chìm nơi chức thấp, không ai hay', '受人尊敬':'Quần thần thảy đều nể sợ', '万众敬仰':'Thiên hạ ngưỡng vọng phong thái' },
+      common:    { '天怒人怨':'Người qua đường chỉ trỏ răn nhau', '声名狼藉':'Kẻ vô lại trong làng cũng khinh', '默默无闻':'Ra vào phố chợ chẳng ai nhận', '受人尊敬':'Xóm làng gọi là bậc trưởng giả', '万众敬仰':'Trẻ con phu dịch đều biết tên' },
+      shadow:    { '天怒人怨':'Lục lâm cũng chẳng thèm dung', '声名狼藉':'Hào kiệt nghe mà khinh bỉ', '默默无闻':'Lẫn nơi tiều ngư, chẳng ai hỏi', '受人尊敬':'Hào kiệt giang hồ phần nhiều theo về', '万众敬仰':'Bốn bể đều xưng là bậc hiệp' },
+      circuit:   { '天怒人怨':'Người cùng giới thẹn khi sánh vai', '声名狼藉':'Bạn bè trách thẳng điều sai', '默默无闻':'Đi một mình, không ai chuyện trò', '受人尊敬':'Đồng môn tôn làm thủ lĩnh', '万众敬仰':'Bọn ta ngưỡng vọng như Thái Sơn' }
     };
     return '<div class="we-rep-grid">' + Object.entries(rep).filter(([k]) => k !== 'lastChange').map(([key, rawVal]) => {
       const val = legacyMap[rawVal] || rawVal;
