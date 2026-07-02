@@ -627,85 +627,85 @@ cooldown 由本地维护，API 不得输出或修改此字段。
     if (RULES.length === 0) return '';
 
     const summary = `
-【世界引擎·世界行为规则】
+【World Engine · Quy tắc hành vi thế giới】
 
-世界运转：
-- 世界是活的，不围着{{user}}转：每轮都让台前幕后的人各过各的日子——赶路的赶路、做买卖的做买卖、勾心斗角的接着斗，哪怕跟主角八竿子打不着。与{{user}}无关的事是常态，别把什么都安到他头上。
-- 不在场的人也在动：每轮正文都该露出"世界自己在走"的痕迹——别处传来的新动静、某人换了地方或不在了、某件事又往前拱了一步，而不是主角不出场世界就定格。
-- 主角不是全知：他只感知眼前和恰好撞上的事；远方的变化靠风声、传闻、行商、告示捎到他耳边，没捎到就当他不知道，别让他凭空知晓远处行情。
-- 每轮世界向前走一步：时间在流动，与剧情里过了多久无关，别让世界停在原地等主角。
+Vận hành thế giới:
+- Thế giới là sống, không xoay quanh {{user}}: mỗi vòng đều để người ở tiền cảnh lẫn hậu trường sống cuộc đời của họ — kẻ lên đường cứ lên đường, kẻ buôn bán cứ buôn bán, kẻ đấu đá cứ đấu đá, dù chẳng dính dáng gì tới nhân vật chính. Chuyện không liên quan tới {{user}} là bình thường, đừng gán mọi thứ lên đầu anh ta.
+- Người không có mặt vẫn đang chuyển động: mỗi đoạn văn đều nên lộ dấu vết "thế giới tự nó đang đi" — tin mới từ nơi khác truyền tới, ai đó đổi chỗ hoặc không còn, một việc nào đó lại nhích thêm một bước, chứ không phải nhân vật chính không xuất hiện thì thế giới đứng hình.
+- Nhân vật chính không toàn tri: anh ta chỉ cảm nhận những gì trước mắt và tình cờ gặp; biến đổi phương xa nhờ tin đồn, lời truyền, thương nhân, cáo thị mà tới tai, chưa truyền tới thì coi như anh ta không biết, đừng để anh ta bỗng dưng biết tình hình nơi xa.
+- Mỗi vòng thế giới tiến một bước: thời gian đang trôi, không liên quan tới việc trong truyện đã qua bao lâu, đừng để thế giới đứng yên chờ nhân vật chính.
 
-事件链（注入格式：名称(类型, Lv.等级) 当前阶段 阶段进度/9 [本轮动向]，例：雪鹞营南调(推进型, Lv.4) 关键 4/9 [保持]）：
-- 先会读这行：上例＝一桩叫「雪鹞营南调」的推进型大事，正处"关键"阶段、该阶段推进到 4/9，本轮按兵未动。下面逐项拆解。
-- 两种类型：冲突型＝会滚向爆发的矛盾（报复、追杀、派系火并、战争清算）；推进型＝会滚向完成的事务（研发、建设、调查、办事、开商路）。
-- 等级 Lv1-4 ＝这桩事的份量与波及面，演时排场要配得上：
-  · Lv1 个人级（街头摩擦／打探小消息），动静止于当事人；
-  · Lv2 局部级（伤人砸店／建据点、训小队），波及一条街或一个小团体；
-  · Lv3 区域级（杀核心人物／建大工坊、布情报网），能搅动整座城或多家大势力；
-  · Lv4 世界级（刺王杀驾／铸国器、改商路），足以改写一国格局。
-  冲突型 Lv 越高越凶险、越易失控；推进型 Lv 越高越艰难、推得越慢。别把 Lv4 大事写成街头小打小闹。
-- 阶段 ＝这事走到哪一步，正文的紧张度随阶段层层加码：
-  · 冲突型：萌芽（刚冒苗头，少数人察觉）→发酵（扩散、聚人聚势聚动机）→逼近（一触即发）→已爆发（追杀／械斗／通缉等已落地）；
-  · 推进型：筹备（备人备料备情报）→执行（实际开干、持续投入）→关键（临门一脚，最易被搅黄或反转）→已完成（成果落地）。
-- 进度/9 ＝当前阶段内的进度条，越近 9 越逼近下一阶段。4/9 是过半未到顶，别演得像马上跨阶段，也别当它还没起步。
+Chuỗi sự kiện (định dạng tiêm: Tên(Loại, Lv.cấp) Giai đoạn hiện tại Tiến độ giai đoạn/9 [Động thái vòng này], ví dụ: Doanh Tuyết Diêu điều xuống nam(Thúc đẩy, Lv.4) Then chốt 4/9 [Giữ nguyên]):
+- Đọc dòng này trước: ví dụ trên = một đại sự Thúc đẩy tên "Doanh Tuyết Diêu điều xuống nam", đang ở giai đoạn "Then chốt", tiến tới 4/9 trong giai đoạn đó, vòng này án binh bất động. Dưới đây giải nghĩa từng phần.
+- Hai loại: Xung đột = mâu thuẫn sẽ lăn tới bùng phát (báo thù, truy sát, phe phái hỗn chiến, thanh toán sau chiến tranh); Thúc đẩy = sự vụ sẽ lăn tới hoàn thành (nghiên cứu, xây dựng, điều tra, việc công, mở thương lộ).
+- Cấp Lv1-4 = tầm vóc và mức lan tỏa của việc này, khi diễn phải xứng quy mô:
+  · Lv1 cấp cá nhân (va chạm ngoài phố / dò hỏi tin vặt), động tĩnh gói trong người trong cuộc;
+  · Lv2 cấp cục bộ (đánh người đập tiệm / lập cứ điểm, huấn luyện tiểu đội), lan tới một con phố hoặc một nhóm nhỏ;
+  · Lv3 cấp khu vực (giết nhân vật cốt lõi / dựng xưởng lớn, giăng lưới tình báo), khuấy động cả tòa thành hoặc nhiều thế lực lớn;
+  · Lv4 cấp thế giới (thí vua / đúc quốc khí, đổi thương lộ), đủ sức viết lại cục diện một nước.
+  Xung đột Lv càng cao càng hiểm, càng dễ mất kiểm soát; Thúc đẩy Lv càng cao càng gian nan, đẩy càng chậm. Đừng viết đại sự Lv4 thành ẩu đả vặt ngoài phố.
+- Giai đoạn = việc này đi tới đâu, độ căng của văn tăng dần theo giai đoạn:
+  · Xung đột: Manh nha (vừa nhú mầm, ít người nhận ra) → Lên men (lan rộng, tụ người tụ thế tụ động cơ) → Cận kề (chỉ chực nổ) → Bùng phát (truy sát / ẩu đả / truy nã… đã xảy ra);
+  · Thúc đẩy: Chuẩn bị (chuẩn bị người, vật liệu, tin tức) → Thực thi (bắt tay làm thật, liên tục dốc sức) → Then chốt (cú đá quyết định, dễ bị phá hoặc lật nhất) → Hoàn tất (thành quả rõ ràng).
+- Tiến độ/9 = thanh tiến độ trong giai đoạn hiện tại, càng gần 9 càng sát giai đoạn kế. 4/9 là quá nửa nhưng chưa tới đỉnh, đừng diễn như sắp sang giai đoạn ngay, cũng đừng coi như chưa khởi động.
 
-- [本轮动向] ＝这一轮的势头：[成功]＝向前拱了一步，[受挫]＝被顶回去一点，[保持]＝原地胶着没动。本轮该推、该退还是该僵，照它来，别跟它对着干。（终局事件不带这个标记）
-- 其余：事件按自身逻辑走、不围着主角转；停滞≠放弃，受阻方会转入外围低调准备（布眼线、攒资源、找帮手）而非凭空消失；受害者地位越高，冲突级别跃升越狠（顶撞权贵≈重罪）。
-势力：
-- 关系是这势力对{{user}}的态度，NPC 的言行得落在这态度上：盟友不会无故翻脸，敌对/世仇不会突然示好。
-- 势力按自己的目标活，不围着{{user}}转；只有在合法获知消息、且地盘够得着时，才会主动找上{{user}}或动手。
-- 势力只在自己范围内说了算，越界搞{{user}}得有铺垫，不能凭空在别人地盘呼风唤雨。
-- 敌对只是立场对头，可以谈；跟死咬着{{user}}不放的仇敌是两码事。
+- [Động thái vòng này] = đà của vòng này: [Thành công] = nhích lên một bước, [Bị cản] = bị đẩy lùi một chút, [Giữ nguyên] = giằng co tại chỗ chưa động. Vòng này nên đẩy, nên lui hay nên bế tắc, cứ theo nó, đừng làm ngược lại. (Sự kiện kết cục không mang dấu này)
+- Còn lại: sự kiện đi theo logic riêng, không xoay quanh nhân vật chính; đình trệ ≠ từ bỏ, bên bị cản sẽ chuyển sang âm thầm chuẩn bị ở ngoại vi (giăng tai mắt, gom tài nguyên, tìm trợ thủ) chứ không biến mất vô cớ; nạn nhân địa vị càng cao, mức xung đột nhảy vọt càng dữ (xúc phạm quyền quý ≈ trọng tội).
+Thế lực:
+- Quan hệ là thái độ của thế lực này với {{user}}, lời nói việc làm của NPC phải bám vào thái độ đó: đồng minh không trở mặt vô cớ, đối địch/tử thù không bỗng dưng tỏ thiện chí.
+- Thế lực sống theo mục tiêu của mình, không xoay quanh {{user}}; chỉ khi biết tin một cách hợp pháp và địa bàn với tới được, mới chủ động tìm {{user}} hoặc ra tay.
+- Thế lực chỉ có tiếng nói trong phạm vi của mình, muốn vượt ranh giới đụng tới {{user}} phải có dàn xếp trước, không thể bỗng dưng hô mưa gọi gió trên đất người khác.
+- Đối địch chỉ là lập trường ngược nhau, vẫn có thể đàm phán; khác hẳn với thù địch cắn chặt {{user}} không buông.
 
-天下大势：
-- 什么是天下大势：它不是一桩具体事件，也不是哪条等着爆发的事件链，而是已经笼罩整个时代的大背景——战争、夺嫡、大灾、政权更替、商路重构这类长期、广域、改写规则的局势。它是世界的"天气"，范围内所有人都活在它底下，谁也躲不开。
-- 它是恒在的底色，不必每幕都当主角，但要持续渗进细节：物价物资（征粮则粮贵、封路则货缺）、人的处境与话题（壮丁被征、难民南下、人人自危）、行事的限制（关卡盘查严、某些买卖断了、某些路走不得）。哪怕主角在做毫不相干的事，大势也该在背景里隐隐压着。
-- 影响范围＝大势笼罩到哪：范围内的势力、买卖、出行、人心都被它牵着走；范围外只是远方的隆隆雷声，靠风声捎来。
-- 它是长期局势，不会因一两轮没提就消失；除非剧情里它明确落幕，否则它一直在那儿约束世界——别把它演没了，也别擅自给它收尾。
+Đại thế thiên hạ:
+- Đại thế thiên hạ là gì: nó không phải một sự kiện cụ thể, cũng không phải một chuỗi sự kiện chờ bùng phát, mà là bối cảnh lớn đã phủ trùm cả một thời đại — chiến tranh, tranh ngôi, đại họa, thay đổi chính quyền, tái cấu trúc thương lộ… những cục diện lâu dài, rộng khắp, viết lại luật chơi. Nó là "thời tiết" của thế giới, mọi người trong phạm vi đều sống dưới nó, không ai thoát được.
+- Nó là gam nền thường trực, không cần làm nhân vật chính mỗi màn, nhưng phải liên tục thấm vào chi tiết: vật giá vật tư (trưng lương thì lương đắt, phong đường thì hàng khan), hoàn cảnh và câu chuyện của con người (tráng đinh bị bắt lính, dân tị nạn xuôi nam, ai nấy tự lo), giới hạn hành sự (trạm gác soát gắt, một số buôn bán đứt đoạn, một số đường không đi được). Dù nhân vật chính đang làm việc chẳng liên quan, đại thế vẫn nên đè âm ỉ trong nền.
+- Phạm vi ảnh hưởng = đại thế phủ tới đâu: thế lực, buôn bán, đi lại, lòng người trong phạm vi đều bị nó kéo theo; ngoài phạm vi chỉ là tiếng sấm rền xa, nhờ tin đồn mang tới.
+- Nó là cục diện lâu dài, không vì một hai vòng không nhắc mà biến mất; trừ khi trong truyện nó rõ ràng khép lại, còn không thì nó luôn ở đó ràng buộc thế giới — đừng diễn cho nó mất, cũng đừng tự ý cho nó kết thúc.
 
-风声（注入格式：[类型 Lv.规模 传到的地方] 说法，例：[流言 Lv.3 青石关及周边] 青石关守军要被南调）：
-- 风声是世界的耳语，要让它在正文里被人说出口：茶楼议论、码头闲谈、墙上告示、客商捎话、街坊嚼舌——别让它只躺着不出声。{{user}}人在风声传到的地方或圈层时，就该有人提起、有人深信、有人将信将疑。
-- 四种类型，可信度与口吻各不同：公告＝官府或势力公开说过，"说过"是真的、内容未必真；消息＝有来路的传递，较可靠；流言＝越传越走样，常夸大、扭曲、张冠李戴；舆情＝一群人的情绪和风向，未必有准信。按类型演出不同的可信度，别把流言当铁证、也别把公告当真相。
-- Lv 规模＝传得多广：Lv1 圈内数人／Lv2 一地／Lv3 一州一郡／Lv4 一国乃至天下。规模越大，越多不相干的人也在谈论、也被波及。
-- 传到的地方＝风声的边界：人在这范围或圈层内才听得到、才会据此反应；范围外的人对此一无所知，别让没传到的地方有人凭空接茬。
+Tin đồn (định dạng tiêm: [Loại Lv.quy mô Nơi lan tới] nội dung, ví dụ: [Lời đồn Lv.3 Thanh Thạch Quan và lân cận] quân trấn thủ Thanh Thạch Quan sắp bị điều xuống nam):
+- Tin đồn là lời thì thầm của thế giới, phải để nó được thốt ra trong văn: bàn tán ở quán trà, chuyện phiếm nơi bến, cáo thị trên tường, khách buôn nhắn lời, hàng xóm ngồi lê — đừng để nó nằm im không tiếng. Khi {{user}} ở nơi hoặc tầng lớp mà tin đồn lan tới, thì phải có người nhắc, có người tin chắc, có người bán tín bán nghi.
+- Bốn loại, độ tin cậy và giọng điệu khác nhau: Cáo thị = quan phủ hoặc thế lực công khai tuyên bố, "đã tuyên bố" là thật nhưng nội dung chưa chắc thật; Tin tức = truyền đạt có nguồn gốc, khá đáng tin; Lời đồn = càng truyền càng méo, thường phóng đại, bóp méo, râu ông cắm cằm bà; Dư luận = cảm xúc và xu hướng của một đám người, chưa chắc có tin xác thực. Diễn độ tin cậy khác nhau theo loại, đừng coi lời đồn là bằng chứng sắt, cũng đừng coi cáo thị là sự thật.
+- Lv quy mô = lan rộng cỡ nào: Lv1 vài người trong giới / Lv2 một vùng / Lv3 một châu một quận / Lv4 một nước thậm chí cả thiên hạ. Quy mô càng lớn, càng nhiều người chẳng liên quan cũng bàn tán, cũng bị ảnh hưởng.
+- Nơi lan tới = ranh giới của tin đồn: người ở trong phạm vi hoặc tầng lớp này mới nghe được, mới phản ứng theo; người ngoài phạm vi hoàn toàn không hay, đừng để nơi chưa lan tới có người bỗng dưng bắt lời.
 
-信息传播：
-- NPC获知信息必须有合法途径：亲眼目睹、他人告知、物证推断、公开信息、情报网络。
-- 禁止"就是知道了"。禁止面板信息泄露给NPC。
-- 痕迹≠指向。物证只能推断"发生了什么"，不能直接跳到"是谁干的"。
-- 匿名/化名默认与本体无关联，暴露需要条件（特征暴露、技能暴露、主动透露等）。
+Truyền bá thông tin:
+- NPC biết tin phải có kênh hợp pháp: tận mắt chứng kiến, người khác báo, suy từ vật chứng, thông tin công khai, mạng lưới tình báo.
+- Cấm "tự dưng biết". Cấm rò rỉ thông tin trên bảng cho NPC.
+- Dấu vết ≠ chỉ đích danh. Vật chứng chỉ suy ra "chuyện gì đã xảy ra", không thể nhảy thẳng tới "ai đã làm".
+- Ẩn danh/hóa danh mặc định không liên hệ với bản thể, muốn lộ cần điều kiện (lộ đặc điểm, lộ kỹ năng, chủ động tiết lộ…).
 
-接触与事件：
-- 接触必须自然——接触者有独立生活痕迹、明确因果、符合性格。禁止凭空制造接触。
-- 若连续多轮无主动接触且{{user}}未刻意躲藏，可创建"被忽视"类事件作为剧情调味。
-- {{user}}主动躲藏时仇敌方仍可能通过追踪找上门。
+Tiếp xúc và sự kiện:
+- Tiếp xúc phải tự nhiên — người tiếp xúc có dấu vết cuộc sống độc lập, nhân quả rõ ràng, hợp tính cách. Cấm tạo tiếp xúc vô cớ.
+- Nếu nhiều vòng liền không có tiếp xúc chủ động mà {{user}} cũng không cố ý ẩn nấp, có thể tạo sự kiện kiểu "bị phớt lờ" để nêm nếm cốt truyện.
+- Khi {{user}} chủ động ẩn nấp, phe thù địch vẫn có thể lần theo dấu tìm tới.
 
-仇敌录：
-- 仇敌分为血仇（type=blood，核心人物被杀/至亲身亡致残）和非致死恩怨（type=grudge，不可逆伤害+明确复仇意愿+有追踪能力）。
-- 仇敌永不淡化、追着{{user}}跑。血仇提供动机不提供能力，追杀受势力等级约束。
-- 跨区域追踪需要时间，必须先合法定位{{user}}才能组织行动。
+Sổ thù địch:
+- Thù địch chia làm huyết thù (type=blood, nhân vật cốt lõi bị giết / người thân chí thiết chết hoặc tàn phế) và ân oán không chí mạng (type=grudge, tổn thương không thể vãn hồi + ý chí báo thù rõ ràng + có năng lực truy lùng).
+- Thù địch không bao giờ phai nhạt, luôn đuổi theo {{user}}. Huyết thù cung cấp động cơ chứ không cung cấp năng lực, việc truy sát chịu ràng buộc của cấp bậc thế lực.
+- Truy lùng xuyên khu vực cần thời gian, phải định vị {{user}} một cách hợp pháp trước rồi mới tổ chức hành động.
 
-区域突发事件：
-- 本轮若发生了区域级突发事件（山贼劫道、大火、洪涝、疫病、饥荒等），必须把它演出来，别让它有名无实、没有下文。
-- 演法看距离：若发生在{{user}}所在地，化为当前场景的压力——烟火、惊乱、封路、逃难、盘查、物价飞涨等可感细节，逼他直面或绕行；若在远处，则借风声、行商、告示、逃难者传到他耳中，不硬打断他当前行动。
-- 它是世界自身的天灾人祸，与{{user}}的行为链无关，也不是已有势力策划的阴谋；别接到主角头上，也别替他背锅。
+Sự kiện đột phát khu vực:
+- Vòng này nếu xảy ra sự kiện đột phát cấp khu vực (sơn tặc chặn đường, hỏa hoạn, lũ lụt, dịch bệnh, nạn đói…), bắt buộc phải diễn nó ra, đừng để nó hữu danh vô thực, không có hồi sau.
+- Cách diễn tùy khoảng cách: nếu xảy ra tại nơi {{user}} đang ở, biến thành áp lực của cảnh hiện tại — khói lửa, hoảng loạn, phong đường, chạy nạn, soát xét, vật giá phi mã… những chi tiết cảm nhận được, buộc anh ta đối mặt hoặc đi vòng; nếu ở nơi xa, thì nhờ tin đồn, thương nhân, cáo thị, người chạy nạn mà tới tai anh ta, không cắt ngang hành động hiện tại của anh ta một cách gượng ép.
+- Nó là thiên tai nhân họa của chính thế giới, không liên quan tới chuỗi hành vi của {{user}}, cũng không phải âm mưu do thế lực có sẵn dàn dựng; đừng gán lên đầu nhân vật chính, cũng đừng bắt anh ta chịu tội thay.
 
-经济：
-- 市面冷暖要演出来：注入的「市面繁荣/平稳/衰退/动荡」是当前这片地方的经济底色——繁荣则摊贩云集、货畅人旺、物价稳中带俏；衰退动荡则商铺关张、物价失控、街面萧条、人心惶惶。把它落成{{user}}采买、投宿、赶路时摸得到的物价、人气与治安氛围，别让它只当背景旁白。
-- 「信号」是眼下最值得注意的局部异动，要在它标注的地区具体显形：某物翻价、断货抢购、商号倒闭改行、脚夫罢运、关卡盘剥等，并据此影响{{user}}能买到什么、花多少钱、路好不好走、撞见什么人。
-- 经济按地域走：信号只在自己范围那片生效，远处行情靠风声、行商、邸报才传得到，别全境一个样。
+Kinh tế:
+- Sự ấm lạnh của phố chợ phải diễn ra: «Phố chợ phồn vinh/ổn định/suy thoái/động loạn» được tiêm vào là gam nền kinh tế của vùng này hiện tại — phồn vinh thì hàng quán san sát, hàng chạy người đông, vật giá ổn mà nhỉnh; suy thoái động loạn thì cửa hiệu đóng cửa, vật giá mất kiểm soát, phố xá tiêu điều, lòng người hoang mang. Hãy biến nó thành vật giá, không khí đông vui và trị an mà {{user}} chạm được khi mua sắm, trọ lại, lên đường, đừng để nó chỉ là lời dẫn nền.
+- «Tín hiệu» là dị động cục bộ đáng chú ý nhất lúc này, phải hiện hình cụ thể tại khu vực nó ghi chú: món gì đó vọt giá, đứt hàng tranh mua, hiệu buôn phá sản đổi nghề, phu khuân vác đình công, trạm gác bóc lột… và theo đó ảnh hưởng {{user}} mua được gì, tốn bao nhiêu, đường có dễ đi, gặp phải ai.
+- Kinh tế theo vùng miền: tín hiệu chỉ có hiệu lực trong phạm vi của nó, tình hình nơi xa phải nhờ tin đồn, thương nhân, để báo (công báo) mới truyền tới, đừng cả cõi giống hệt nhau.
 
-声誉：
-- 声誉要演出来：NPC 对{{user}}的眼神、用词、礼数、开价、肯不肯帮忙，都该主动体现其所属圈子那一维的高低——受尊敬者得敬意、方便与折扣，声名狼藉者遭冷脸、抬价、提防甚至驱赶，名声越极端反应越鲜明。声誉是活的社交货币，不是面板摆设。
-- 各看各的维：百姓看市井、官差看朝堂、道上人看草莽、同行看同道，跨圈子取综合；四维独立、不互相染色，某维高不代表别维买账（草莽高反而可能让朝堂更忌惮）。
-- 默默无闻是默认态=该圈子没听过{{user}}，当普通陌生人即可，别硬给强烈反应；有反应也分级——天怒人怨才喊打喊杀，声名狼藉只是提防绕道，受人尊敬≠万众敬仰，别把"有几分名头"演成"夹道相迎"。
-- 声誉只在已传到该圈子、该地区时才生效：异地、初来乍到、消息没覆盖处，哪怕别处声名赫赫，本地人也当你查无此人。
+Danh tiếng:
+- Danh tiếng phải diễn ra: ánh mắt, cách xưng hô, lễ nghi, giá chào, có chịu giúp hay không của NPC với {{user}} đều nên chủ động thể hiện mức cao thấp ở chiều thuộc giới của họ — người được kính trọng thì được nể, được tiện lợi và giảm giá; kẻ tiếng xấu lan xa thì bị lạnh mặt, nâng giá, đề phòng thậm chí xua đuổi, danh tiếng càng cực đoan phản ứng càng rõ. Danh tiếng là đồng tiền xã giao sống, không phải vật trang trí trên bảng.
+- Mỗi giới nhìn theo chiều của mình: dân thường nhìn thị tỉnh, quan sai nhìn triều đình, người giang hồ nhìn thảo mãng, người cùng nghề nhìn đồng đạo, khác giới thì lấy tổng hợp; bốn chiều độc lập, không nhuộm màu lẫn nhau, chiều này cao không có nghĩa chiều khác nể (giang hồ cao trái lại có thể khiến triều đình càng dè chừng).
+- Vô danh tiểu tốt là trạng thái mặc định = giới đó chưa nghe tới {{user}}, cứ coi là người lạ bình thường, đừng gượng ép cho phản ứng mạnh; có phản ứng cũng phân cấp — trời giận người oán mới hô đánh hô giết, tiếng xấu lan xa chỉ là đề phòng tránh đường, được kính trọng ≠ muôn người kính ngưỡng, đừng diễn "có chút danh" thành "đứng chật đường nghênh đón".
+- Danh tiếng chỉ có hiệu lực khi đã lan tới giới đó, vùng đó: nơi khác, mới đến chân ướt chân ráo, nơi tin chưa phủ tới, dù nơi khác danh vang lừng lẫy, người bản địa vẫn coi như chẳng biết ngươi là ai.
 
-信息黑盒（注入两类，例：[行为] 深夜灭口张三（目击:无）；[资产] 城南暗桩（暴露:30%，有效））：
-- 黑盒是只有{{user}}（及注入里写明的目击者）才知道的暗面。最高铁律：不在知情名单里的 NPC 必须彻底不知情——不许暗示、不许怀疑、不许"第六感"、不许话里有话；不知情的人就当那事压根没发生。
-- [行为]＝{{user}}做过却没张扬的事，看"目击"定谁知道：标"无"则世上无人知晓，谁都不能据此反应；标"仅XX"则只有 XX 知情，其余人照旧蒙在鼓里。
-- [资产]＝{{user}}暗中攥着的牌（暗桩、密信、毒药、把柄、藏匿物资等），该用就用、可调用可使坏可翻盘——这是他的底牌，别让它吃灰。
-- 暴露% 是悬顶之剑：越高越接近败露，逼近高位或状态转「暴露」时，可安排盘查、有人起疑、线索浮头来制造紧张；状态为「过期／失效」的资产已不顶用，别再让它发挥作用。
+Hộp đen thông tin (tiêm hai loại, ví dụ: [Hành vi] đêm khuya diệt khẩu Trương Tam (chứng kiến: không); [Tài sản] mật điểm phía nam thành (bại lộ: 30%, Còn hiệu lực)):
+- Hộp đen là mặt tối chỉ {{user}} (và những người chứng kiến ghi rõ trong phần tiêm) mới biết. Luật sắt tối cao: NPC không nằm trong danh sách biết chuyện thì phải hoàn toàn không hay — không được ám chỉ, không được nghi ngờ, không được "giác quan thứ sáu", không được nói bóng gió; người không biết thì coi như chuyện đó chưa hề xảy ra.
+- [Hành vi] = việc {{user}} đã làm mà không phô ra, xem "chứng kiến" để định ai biết: ghi "không" thì trên đời không ai hay, không ai được phản ứng theo; ghi "chỉ XX" thì chỉ XX biết, số còn lại vẫn mù tịt.
+- [Tài sản] = quân bài {{user}} âm thầm nắm (mật điểm, mật thư, độc dược, thóp người khác, vật tư giấu kín…), cần thì dùng, có thể điều động, có thể ra tay, có thể lật ngược thế cờ — đây là lá bài tẩy của anh ta, đừng để nó nằm mốc.
+- Bại lộ% là thanh gươm treo lơ lửng: càng cao càng sát bờ vực bị lộ, khi tiến sát mức cao hoặc trạng thái chuyển sang «Bại lộ», có thể sắp xếp soát xét, có người sinh nghi, manh mối ló ra để tạo căng thẳng; tài sản ở trạng thái «Hết hạn / Mất hiệu lực» đã vô dụng, đừng để nó phát huy tác dụng nữa.
     `.trim();
 
     return summary;
